@@ -1,0 +1,17 @@
+{
+  "name": "ktms-dashboard",
+  "version": "1.0.0",
+  "description": "Kidney Transplant Management System",
+  "scripts": {
+    "dev": "npx serve .",
+    "build": "echo 'No build step required for static HTML/CSS' && exit 0"
+  },
+  "keywords": [
+    "dashboard",
+    "medical",
+    "html",
+    "css"
+  ],
+  "author": "",
+  "license": "ISC"
+}
