@@ -3,242 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KTMS | Kidney Transplant Management System</title>
-    <meta name="description" content="Dashboard for Kidney Transplant Management System">
-    
+    <title>OrganMatch AI | Transplant Matching</title>
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <!-- Styles -->
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="app-container">
-        <!-- Sidebar Navigation -->
-        <aside class="sidebar">
-            <div class="brand">
-                <div class="logo">
-                    <i class="fa-solid fa-staff-snake"></i>
-                </div>
-                <h2>KTMS<span>.</span></h2>
-            </div>
-            
-            <nav class="nav-menu">
-                <a href="#" class="nav-item active">
-                    <i class="fa-solid fa-border-all"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="#" class="nav-item">
-                    <i class="fa-solid fa-users-viewfinder"></i>
-                    <span>Patients & Donors</span>
-                </a>
-                <a href="#" class="nav-item">
-                    <i class="fa-solid fa-dna"></i>
-                    <span>HLA Matching</span>
-                </a>
-                <a href="#" class="nav-item">
-                    <i class="fa-solid fa-bed-pulse"></i>
-                    <span>Transplants</span>
-                </a>
-                <a href="#" class="nav-item">
-                    <i class="fa-solid fa-file-signature"></i>
-                    <span>Legal Clearances</span>
-                </a>
-                <a href="#" class="nav-item">
-                    <i class="fa-solid fa-file-invoice-dollar"></i>
-                    <span>Billing</span>
-                </a>
-            </nav>
+    <div class="app-background">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+        <div class="glow-orb orb-3"></div>
+    </div>
 
-            <div class="sidebar-bottom">
-                <a href="#" class="nav-item">
-                    <i class="fa-solid fa-gear"></i>
-                    <span>Settings</span>
-                </a>
-                <a href="#" class="nav-item text-danger">
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                    <span>Logout</span>
-                </a>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="glass-header">
+            <div class="brand">
+                <div class="logo-icon">
+                    <i class="fa-solid fa-dna"></i>
+                </div>
+                <h1>OrganMatch<span>AI</span></h1>
             </div>
-        </aside>
+            <div class="header-actions">
+                <button class="btn btn-outline"><i class="fa-solid fa-database"></i> Database Sync</button>
+                <div class="user-profile">
+                    <img src="https://ui-avatars.com/api/?name=Admin&background=0D1117&color=00F0FF" alt="Admin">
+                </div>
+            </div>
+        </header>
 
         <!-- Main Content -->
         <main class="main-content">
-            <!-- Topbar -->
-            <header class="topbar">
-                <div class="search-bar">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" placeholder="Search patients, donors, or doctors...">
-                </div>
-                <div class="user-profile">
-                    <div class="notification-bell">
-                        <i class="fa-regular fa-bell"></i>
-                        <span class="badge">3</span>
+            <div class="matching-workspace">
+                
+                <!-- Left Column: Recipients -->
+                <div class="panel glass-panel">
+                    <div class="panel-header">
+                        <h2><i class="fa-solid fa-user-injured"></i> Recipients</h2>
+                        <span class="badge" id="recipients-count">0</span>
                     </div>
-                    <div class="profile-info">
-                        <div class="avatar">
-                            <img src="https://ui-avatars.com/api/?name=Dr+Raza&background=e63946&color=fff" alt="User Avatar">
-                        </div>
-                        <div class="details">
-                            <span class="name">Dr. Raza</span>
-                            <span class="role">Nephrology Lead</span>
-                        </div>
+                    <div class="list-container" id="recipients-list">
+                        <!-- Populated by JS -->
                     </div>
                 </div>
-            </header>
 
-            <!-- Dashboard Content -->
-            <div class="dashboard-wrapper">
-                <div class="welcome-banner">
-                    <div class="banner-text">
-                        <h1>Good Morning, Dr. Raza!</h1>
-                        <p>You have <strong>2</strong> transplant surgeries scheduled for this week and <strong>5</strong> pending legal clearances.</p>
-                    </div>
-                    <button class="primary-btn"><i class="fa-solid fa-plus"></i> New Registration</button>
-                </div>
-
-                <!-- KPI Stats -->
-                <section class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon red-light">
-                            <i class="fa-solid fa-heart-pulse red-text"></i>
-                        </div>
-                        <div class="stat-details">
-                            <h3>Active Waitlist</h3>
-                            <div class="stat-value"><span class="counter" data-target="124">0</span></div>
-                            <p class="trend positive"><i class="fa-solid fa-arrow-up"></i> 4 new this week</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon blue-light">
-                            <i class="fa-solid fa-kidneys blue-text"></i>
-                        </div>
-                        <div class="stat-details">
-                            <h3>Available Organs</h3>
-                            <div class="stat-value"><span class="counter" data-target="18">0</span></div>
-                            <p class="trend neutral"><i class="fa-solid fa-minus"></i> Stable</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon green-light">
-                            <i class="fa-solid fa-hand-holding-medical green-text"></i>
-                        </div>
-                        <div class="stat-details">
-                            <h3>Successful Transplants</h3>
-                            <div class="stat-value"><span class="counter" data-target="45">0</span></div>
-                            <p class="trend positive"><i class="fa-solid fa-arrow-up"></i> +12% this month</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon orange-light">
-                            <i class="fa-solid fa-scale-balanced orange-text"></i>
-                        </div>
-                        <div class="stat-details">
-                            <h3>Pending Clearances</h3>
-                            <div class="stat-value"><span class="counter" data-target="12">0</span></div>
-                            <p class="trend negative"><i class="fa-solid fa-clock"></i> Action required</p>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Data Tables -->
-                <div class="dashboard-tables">
-                    <!-- Recent Matches -->
-                    <div class="table-card">
-                        <div class="card-header">
-                            <h2>Recent HLA Matches</h2>
-                            <a href="#" class="view-all">View All</a>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="modern-table">
-                                <thead>
-                                    <tr>
-                                        <th>Recipient</th>
-                                        <th>Matched Donor</th>
-                                        <th>Organ</th>
-                                        <th>Compatibility</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>
-                                            <div class="patient-cell">
-                                                <div class="avatar-sm">UK</div>
-                                                <span>Usman Khan</span>
-                                            </div>
-                                        </td>
-                                        <td>Ahmed Ali</td>
-                                        <td><span class="badge-organ left">Left Kidney</span></td>
-                                        <td>
-                                            <div class="progress-bar">
-                                                <div class="progress" style="width: 95%;"></div>
-                                            </div>
-                                            <span class="progress-text">95%</span>
-                                        </td>
-                                        <td><button class="action-btn">Review</button></td>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <div class="patient-cell">
-                                                <div class="avatar-sm">FN</div>
-                                                <span>Fatima Noor</span>
-                                            </div>
-                                        </td>
-                                        <td>Zainab Bibi</td>
-                                        <td><span class="badge-organ right">Right Kidney</span></td>
-                                        <td>
-                                            <div class="progress-bar">
-                                                <div class="progress" style="width: 88%;"></div>
-                                            </div>
-                                            <span class="progress-text">88%</span>
-                                        </td>
-                                        <td><button class="action-btn">Review</button></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Upcoming Surgeries -->
-                    <div class="table-card side-card">
-                        <div class="card-header">
-                            <h2>Upcoming Surgeries</h2>
-                            <button class="icon-btn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
-                        </div>
-                        <div class="surgery-list">
-                            <div class="surgery-item">
-                                <div class="date-box">
-                                    <span class="month">MAY</span>
-                                    <span class="day">12</span>
-                                </div>
-                                <div class="surgery-info">
-                                    <h4>Usman Khan</h4>
-                                    <p><i class="fa-regular fa-clock"></i> 08:00 AM • ICU-A</p>
-                                    <div class="surgeon"><i class="fa-solid fa-user-doctor"></i> Dr. Ayesha</div>
-                                </div>
-                                <div class="status-indicator"></div>
-                            </div>
-                            <div class="surgery-item">
-                                <div class="date-box">
-                                    <span class="month">MAY</span>
-                                    <span class="day">15</span>
-                                </div>
-                                <div class="surgery-info">
-                                    <h4>Ali Rehman</h4>
-                                    <p><i class="fa-regular fa-clock"></i> 10:30 AM • Ward-B</p>
-                                    <div class="surgeon"><i class="fa-solid fa-user-doctor"></i> Dr. Raza</div>
-                                </div>
-                                <div class="status-indicator pending"></div>
+                <!-- Center Column: Matching Engine -->
+                <div class="center-panel">
+                    <div class="engine-status">
+                        <div class="status-ring">
+                            <div class="ring-inner">
+                                <i class="fa-solid fa-network-wired"></i>
                             </div>
                         </div>
+                        <h3>Matching Engine Ready</h3>
+                        <p>Cross-matching HLA, Blood Type, and Age factors.</p>
+                    </div>
+                    
+                    <button class="btn btn-primary btn-glow" id="run-matching-btn">
+                        <i class="fa-solid fa-bolt"></i> Run Deep Analysis
+                    </button>
+
+                    <div class="matches-preview glass-panel hidden" id="matches-results">
+                        <div class="panel-header">
+                            <h2><i class="fa-solid fa-handshake"></i> Top Matches Found</h2>
+                        </div>
+                        <div class="matches-list" id="matches-list">
+                            <!-- Populated by JS -->
+                        </div>
                     </div>
                 </div>
+
+                <!-- Right Column: Donors -->
+                <div class="panel glass-panel">
+                    <div class="panel-header">
+                        <h2><i class="fa-solid fa-hand-holding-medical"></i> Available Donors</h2>
+                        <span class="badge" id="donors-count">0</span>
+                    </div>
+                    <div class="list-container" id="donors-list">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
             </div>
         </main>
     </div>
