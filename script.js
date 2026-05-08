@@ -62,6 +62,71 @@ function formatHlaRow(row) {
     return HLA_FIELDS.map(field => row[field]).filter(Boolean).join(', ');
 }
 
+async function loadSupabaseData() {
+    const [
+        recipients,
+        donors,
+        donorOrgans,
+        recipientOrgans,
+        donorHla,
+        recipientHla,
+        waitingList
+    ] = await Promise.all([
+        fetchTable('recipient'),
+        fetchTable('donor'),
+        fetchTable('donor_organ'),
+        fetchTable('recipient_organ'),
+        fetchTable('donor_hla_test'),
+        fetchTable('recipient_hla_test'),
+        fetchTable('waiting_list')
+    ]);
+
+    return {
+        recipients,
+        donors,
+        donorOrgans,
+        recipientOrgans,
+        donorHla,
+        recipientHla,
+        waitingList
+    };
+}
+
+function buildRecipientCards(data) {
+    const recipientHlaByRo = new Map(data.recipientHla.map(h => [h.ro_id, formatHlaRow(h)]));
+    const organByRecipient = new Map(
+        data.recipientOrgans.map(o => [o.r_id, recipientHlaByRo.get(o.ro_id) || 'Pending'])
+    );
+    const waitStatusByRecipient = new Map(
+        (data.waitingList || []).map(entry => [entry.r_id, entry.status])
+    );
+
+    return data.recipients.map(r => ({
+        id: `R${r.r_id}`,
+        name: r.name,
+        bloodType: 'N/A',
+        hla: organByRecipient.get(r.r_id) || 'Pending',
+        urgency: waitStatusByRecipient.get(r.r_id) || 'N/A',
+        age: 'N/A'
+    }));
+}
+
+function buildDonorCards(data) {
+    const donorHlaByOd = new Map(data.donorHla.map(h => [h.od_id, formatHlaRow(h)]));
+    const organByDonor = new Map(
+        data.donorOrgans.map(o => [o.d_id, donorHlaByOd.get(o.od_id) || 'Pending'])
+    );
+
+    return data.donors.map(d => ({
+        id: `D${d.d_id}`,
+        name: d.name,
+        bloodType: 'N/A',
+        hla: organByDonor.get(d.d_id) || 'Pending',
+        age: 'N/A',
+        type: d.type === 'Alive' ? 'Living' : 'Deceased'
+    }));
+}
+
 function buildHlaMatches({
     donors,
     recipients,
@@ -118,6 +183,110 @@ function buildHlaMatches({
     return matches.sort((a, b) => b.score - a.score).slice(0, 5);
 }
 
+function renderRecipients(list, container, initialsFn) {
+    container.innerHTML = '';
+    list.forEach((p, index) => {
+        const delay = index * 0.1;
+        const card = document.createElement('div');
+        card.className = 'person-card recipient-card';
+        card.style.animationDelay = `${delay}s`;
+        const urgencyColors = {
+            Active: '#ff2d2d',
+            Matched: '#ffffff',
+            Operated: '#cbd5f5',
+            Removed: '#8b8b8b'
+        };
+        const urgencyColor = urgencyColors[p.urgency] || '#94a3b8';
+        card.innerHTML = `
+            <div class="avatar">${initialsFn(p.name)}</div>
+            <div class="info">
+                <h4>${p.name}</h4>
+                <div class="traits">
+                    <span class="trait-badge trait-blood"><i class="fa-solid fa-droplet"></i> ${p.bloodType}</span>
+                    <span class="trait-badge trait-hla">HLA: ${p.hla}</span>
+                    <span class="trait-badge" style="color: ${urgencyColor}">
+                        <i class="fa-solid fa-circle-exclamation"></i> ${p.urgency}
+                    </span>
+                </div>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+function renderDonors(list, container, initialsFn) {
+    container.innerHTML = '';
+    list.forEach((d, index) => {
+        const delay = index * 0.1;
+        const card = document.createElement('div');
+        card.className = 'person-card donor-card';
+        card.style.animationDelay = `${delay}s`;
+        card.innerHTML = `
+            <div class="avatar">${initialsFn(d.name)}</div>
+            <div class="info">
+                <h4>${d.name}</h4>
+                <div class="traits">
+                    <span class="trait-badge trait-blood"><i class="fa-solid fa-droplet"></i> ${d.bloodType}</span>
+                    <span class="trait-badge trait-hla">HLA: ${d.hla}</span>
+                    <span class="trait-badge"><i class="fa-solid fa-user-tag"></i> ${d.type}</span>
+                </div>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+function renderMatches(matchResults, matchesList, initialsFn) {
+    matchesList.innerHTML = '';
+    if (!matchResults.length) {
+        matchesList.innerHTML = '<div class="match-result-card">No compatible matches found. Add more HLA tests to expand results.</div>';
+        return;
+    }
+
+    matchResults.forEach((match, index) => {
+        const card = document.createElement('div');
+        card.className = 'match-result-card';
+        card.style.animation = `slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards ${index * 0.2}s`;
+        card.style.opacity = '0';
+
+        const color = match.score > 90 ? '#ffffff' : match.score > 80 ? '#ff7a7a' : '#ff2d2d';
+
+        card.innerHTML = `
+            <div class="match-header">
+                <div class="match-score">
+                    <div class="score-circle" style="color: ${color}; border-color: ${color}; box-shadow: 0 0 20px ${color}40;">
+                        ${match.score}%
+                    </div>
+                    <div class="score-label">Compatibility Score</div>
+                </div>
+                <button class="match-action">Review Case</button>
+            </div>
+            <div class="match-details">
+                    <div class="match-person recipient">
+                        <div class="avatar" style="background: rgba(255,45,45,0.15); border: 1px solid rgba(255,45,45,0.45); color: #ff9a9a;">${initialsFn(match.recipient.name)}</div>
+                    <div>
+                        <h5>${match.recipient.name}</h5>
+                        <span>Recipient • Blood: ${match.recipient.bloodType}</span>
+                    </div>
+                </div>
+
+                <div class="match-link" style="color: ${color};">
+                    <i class="fa-solid fa-link"></i>
+                </div>
+
+                    <div class="match-person donor">
+                        <div class="avatar" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.4); color: #ffffff;">${initialsFn(match.donor.name)}</div>
+                    <div>
+                        <h5>${match.donor.name}</h5>
+                        <span>Donor • Blood: ${match.donor.bloodType}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        matchesList.appendChild(card);
+    });
+}
+
 // Initialize UI
 document.addEventListener('DOMContentLoaded', async () => {
     const recipientsList = document.getElementById('recipients-list');
@@ -128,54 +297,47 @@ document.addEventListener('DOMContentLoaded', async () => {
     const engineStatus = document.querySelector('.center-panel');
     const engineStatusTitle = document.querySelector('.engine-status h3');
     const engineStatusText = document.querySelector('.engine-status p');
+    const availableOrgansEl = document.getElementById('available-organs-count');
+    const activeWaitlistEl = document.getElementById('active-waitlist-count');
+    const lastSyncEl = document.getElementById('last-sync-time');
+
+    const getInitials = (name) => {
+        if (name === 'Anonymous') return 'AN';
+        return name.split(' ').map(n => n[0]).join('');
+    };
 
     let recipients = [];
     let donors = [];
     let matches = [];
+    let sourceData = {
+        recipients: [],
+        donors: [],
+        donorOrgans: [],
+        recipientOrgans: [],
+        donorHla: [],
+        recipientHla: [],
+        waitingList: []
+    };
+
+    const updateSummary = (data) => {
+        const availableOrgans = data.donorOrgans.filter(organ => organ.status === 'Available').length;
+        const activeWaitlist = (data.waitingList || []).filter(entry => entry.status === 'Active').length;
+        availableOrgansEl.textContent = availableOrgans;
+        activeWaitlistEl.textContent = activeWaitlist;
+    };
+
+    const updateLastSync = () => {
+        const now = new Date();
+        lastSyncEl.textContent = now.toLocaleString();
+    };
 
     try {
-        const [
-            recipientsData,
-            donorsData,
-            donorOrgans,
-            recipientOrgans,
-            donorHla,
-            recipientHla
-        ] = await Promise.all([
-            fetchTable('recipient'),
-            fetchTable('donor'),
-            fetchTable('donor_organ'),
-            fetchTable('recipient_organ'),
-            fetchTable('donor_hla_test'),
-            fetchTable('recipient_hla_test')
-        ]);
-
-        recipients = recipientsData.map(r => ({
-            id: `R${r.r_id}`,
-            name: r.name,
-            bloodType: 'N/A',
-            hla: 'Pending',
-            urgency: 'N/A',
-            age: 'N/A'
-        }));
-
-        donors = donorsData.map(d => ({
-            id: `D${d.d_id}`,
-            name: d.name,
-            bloodType: 'N/A',
-            hla: 'Pending',
-            age: 'N/A',
-            type: d.type === 'Alive' ? 'Living' : 'Deceased'
-        }));
-
-        matches = buildHlaMatches({
-            donors: donorsData,
-            recipients: recipientsData,
-            donorOrgans,
-            recipientOrgans,
-            donorHla,
-            recipientHla
-        });
+        sourceData = await loadSupabaseData();
+        recipients = buildRecipientCards(sourceData);
+        donors = buildDonorCards(sourceData);
+        matches = buildHlaMatches(sourceData);
+        updateSummary(sourceData);
+        updateLastSync();
 
         engineStatusTitle.textContent = 'Supabase Connected';
         engineStatusText.textContent = `Loaded ${recipients.length} recipients and ${donors.length} donors.`;
@@ -184,140 +346,83 @@ document.addEventListener('DOMContentLoaded', async () => {
         recipients = fallbackRecipients;
         donors = fallbackDonors;
         matches = fallbackMatches;
+        availableOrgansEl.textContent = '0';
+        activeWaitlistEl.textContent = '0';
+        lastSyncEl.textContent = 'Demo data';
         engineStatusTitle.textContent = 'Demo Mode';
         engineStatusText.textContent = 'Supabase connection failed. Using local demo data.';
     }
 
-    // Update Counts
     document.getElementById('recipients-count').textContent = recipients.length;
     document.getElementById('donors-count').textContent = donors.length;
 
-    // Helper to get initials
-    const getInitials = (name) => {
-        if (name === 'Anonymous') return 'AN';
-        return name.split(' ').map(n => n[0]).join('');
-    };
+    renderRecipients(recipients, recipientsList, getInitials);
+    renderDonors(donors, donorsList, getInitials);
 
-    // Render Recipients
-    recipients.forEach((p, index) => {
-        const delay = index * 0.1;
-        const card = document.createElement('div');
-        card.className = 'person-card recipient-card';
-        card.style.animationDelay = `${delay}s`;
-        card.innerHTML = `
-            <div class="avatar">${getInitials(p.name)}</div>
-            <div class="info">
-                <h4>${p.name}</h4>
-                <div class="traits">
-                    <span class="trait-badge trait-blood"><i class="fa-solid fa-droplet"></i> ${p.bloodType}</span>
-                    <span class="trait-badge trait-hla">HLA: ${p.hla}</span>
-                    <span class="trait-badge" style="color: ${p.urgency === 'Critical' ? '#ef4444' : p.urgency === 'High' ? '#f59e0b' : '#94a3b8'}">
-                        <i class="fa-solid fa-circle-exclamation"></i> ${p.urgency}
-                    </span>
-                </div>
-            </div>
-        `;
-        recipientsList.appendChild(card);
-    });
-
-    // Render Donors
-    donors.forEach((d, index) => {
-        const delay = index * 0.1;
-        const card = document.createElement('div');
-        card.className = 'person-card donor-card';
-        card.style.animationDelay = `${delay}s`;
-        card.innerHTML = `
-            <div class="avatar">${getInitials(d.name)}</div>
-            <div class="info">
-                <h4>${d.name}</h4>
-                <div class="traits">
-                    <span class="trait-badge trait-blood"><i class="fa-solid fa-droplet"></i> ${d.bloodType}</span>
-                    <span class="trait-badge trait-hla">HLA: ${d.hla}</span>
-                    <span class="trait-badge"><i class="fa-solid fa-user-tag"></i> ${d.type}</span>
-                </div>
-            </div>
-        `;
-        donorsList.appendChild(card);
-    });
-
-    // Run Matching Engine Simulation
-    runBtn.addEventListener('click', () => {
-        // Change state to matching
+    runBtn.addEventListener('click', async () => {
         engineStatus.classList.add('is-matching');
         runBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Cross-matching Vectors...';
         runBtn.classList.add('btn-outline');
         runBtn.classList.remove('btn-primary', 'btn-glow');
         runBtn.disabled = true;
-        
+
         matchesPreview.classList.remove('visible');
         setTimeout(() => {
             matchesPreview.style.display = 'none';
         }, 300);
 
-        // Simulate calculation time
+        engineStatusTitle.textContent = 'Matching In Progress';
+        engineStatusText.textContent = 'Loading latest donor and recipient data.';
+
+        const stepOne = new Promise(resolve => setTimeout(resolve, 900));
+        const stepTwo = new Promise(resolve => setTimeout(resolve, 1800));
+
+        try {
+            sourceData = await loadSupabaseData();
+            recipients = buildRecipientCards(sourceData);
+            donors = buildDonorCards(sourceData);
+            matches = buildHlaMatches(sourceData);
+            updateSummary(sourceData);
+            updateLastSync();
+
+            renderRecipients(recipients, recipientsList, getInitials);
+            renderDonors(donors, donorsList, getInitials);
+            document.getElementById('recipients-count').textContent = recipients.length;
+            document.getElementById('donors-count').textContent = donors.length;
+        } catch (error) {
+            console.error(error);
+            recipients = fallbackRecipients;
+            donors = fallbackDonors;
+            matches = fallbackMatches;
+            availableOrgansEl.textContent = '0';
+            activeWaitlistEl.textContent = '0';
+            lastSyncEl.textContent = 'Demo data';
+            renderRecipients(recipients, recipientsList, getInitials);
+            renderDonors(donors, donorsList, getInitials);
+        }
+
+        await stepOne;
+        engineStatusText.textContent = 'Evaluating HLA compatibility scores.';
+        await stepTwo;
+        engineStatusText.textContent = 'Ranking high-probability matches.';
+
         setTimeout(() => {
             engineStatus.classList.remove('is-matching');
             runBtn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Rerun Analysis';
             runBtn.classList.remove('btn-outline');
             runBtn.classList.add('btn-primary');
             runBtn.disabled = false;
-            
+
             engineStatusTitle.textContent = 'Analysis Complete';
             engineStatusText.textContent = `Identified ${matches.length} high-probability matches based on genetic markers.`;
 
-            renderMatches(matches);
-            
+            renderMatches(matches, matchesList, getInitials);
+
             matchesPreview.style.display = 'flex';
             setTimeout(() => {
                 matchesPreview.classList.add('visible');
             }, 50);
 
-        }, 3500);
+        }, 900);
     });
-
-    function renderMatches(matchResults) {
-        matchesList.innerHTML = '';
-        matchResults.forEach((match, index) => {
-            const card = document.createElement('div');
-            card.className = 'match-result-card';
-            card.style.animation = `slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards ${index * 0.2}s`;
-            card.style.opacity = '0';
-            
-            let color = match.score > 90 ? '#10b981' : match.score > 80 ? '#f59e0b' : '#3b82f6';
-
-            card.innerHTML = `
-                <div class="match-header">
-                    <div class="match-score">
-                        <div class="score-circle" style="color: ${color}; border-color: ${color}; box-shadow: 0 0 20px ${color}40;">
-                            ${match.score}%
-                        </div>
-                        <div class="score-label">Compatibility Score</div>
-                    </div>
-                    <button class="match-action">Review Case</button>
-                </div>
-                <div class="match-details">
-                    <div class="match-person recipient">
-                        <div class="avatar" style="background: rgba(112,0,255,0.15); border: 1px solid rgba(112,0,255,0.4); color: #b37fff;">${getInitials(match.recipient.name)}</div>
-                        <div>
-                            <h5>${match.recipient.name}</h5>
-                            <span>Recipient • Blood: ${match.recipient.bloodType}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="match-link" style="color: ${color};">
-                        <i class="fa-solid fa-link"></i>
-                    </div>
-
-                    <div class="match-person donor">
-                        <div class="avatar" style="background: rgba(0,240,255,0.1); border: 1px solid rgba(0,240,255,0.4); color: #00f0ff;">${getInitials(match.donor.name)}</div>
-                        <div>
-                            <h5>${match.donor.name}</h5>
-                            <span>Donor • Blood: ${match.donor.bloodType}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-            matchesList.appendChild(card);
-        });
-    }
 });

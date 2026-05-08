@@ -68,6 +68,24 @@
                         <i class="fa-solid fa-bolt"></i> Run Deep Analysis
                     </button>
 
+                    <div class="analysis-meta glass-panel">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <span class="stat-label">Available Organs</span>
+                                <span class="stat-value" id="available-organs-count">0</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-label">Active Waitlist</span>
+                                <span class="stat-value" id="active-waitlist-count">0</span>
+                            </div>
+                        </div>
+                        <div class="sync-info">
+                            <i class="fa-solid fa-clock"></i>
+                            <span>Last sync:</span>
+                            <span id="last-sync-time">--</span>
+                        </div>
+                    </div>
+
                     <div class="matches-preview glass-panel hidden" id="matches-results">
                         <div class="panel-header">
                             <h2><i class="fa-solid fa-handshake"></i> Top Matches Found</h2>
