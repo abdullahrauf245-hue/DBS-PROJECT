@@ -1,5 +1,16 @@
-// Mock Data for the Organ Matching System
-const recipients = [
+// Supabase REST config (override by setting window.SUPABASE_URL / window.SUPABASE_ANON_KEY)
+const SUPABASE_URL = window.SUPABASE_URL || 'https://cwhpufwtjnkwppmnojnt.supabase.co';
+const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'sb_publishable_wPzaWCX0PyKMmC9PM_fTOw_UxbmSni5';
+const SUPABASE_REST = `${SUPABASE_URL.replace(/\/+$/, '')}/rest/v1`;
+
+const SUPABASE_HEADERS = {
+    apikey: SUPABASE_ANON_KEY,
+    Authorization: `Bearer ${SUPABASE_ANON_KEY}`
+};
+
+const HLA_FIELDS = ['hla_a1', 'hla_a2', 'hla_b1', 'hla_b2', 'hla_dr1', 'hla_dr2'];
+
+const fallbackRecipients = [
     { id: 'R001', name: 'John Doe', bloodType: 'O+', hla: 'A*02, B*07', urgency: 'High', age: 45 },
     { id: 'R002', name: 'Sarah Smith', bloodType: 'A-', hla: 'A*01, B*08', urgency: 'Medium', age: 32 },
     { id: 'R003', name: 'Michael Chen', bloodType: 'B+', hla: 'A*24, B*15', urgency: 'Critical', age: 50 },
@@ -8,7 +19,7 @@ const recipients = [
     { id: 'R006', name: 'Jessica Taylor', bloodType: 'A+', hla: 'A*02, B*27', urgency: 'High', age: 41 },
 ];
 
-const donors = [
+const fallbackDonors = [
     { id: 'D001', name: 'Anonymous', bloodType: 'O+', hla: 'A*02, B*07', age: 35, type: 'Deceased' },
     { id: 'D002', name: 'William Brown', bloodType: 'A-', hla: 'A*01, B*08', age: 29, type: 'Living' },
     { id: 'D003', name: 'David Lee', bloodType: 'O-', hla: 'A*11, B*44', age: 42, type: 'Living' },
@@ -16,35 +27,166 @@ const donors = [
     { id: 'D005', name: 'Lisa Anderson', bloodType: 'A+', hla: 'A*02, B*44', age: 31, type: 'Living' },
 ];
 
-const mockMatches = [
+const fallbackMatches = [
     {
-        recipient: recipients[0], // John Doe
-        donor: donors[0], // Anonymous O+
+        recipient: fallbackRecipients[0],
+        donor: fallbackDonors[0],
         score: 98,
         matchFactors: ['Perfect Blood Match', '6/6 HLA Match', 'Age Compatibility']
     },
     {
-        recipient: recipients[1], // Sarah Smith
-        donor: donors[1], // William Brown
+        recipient: fallbackRecipients[1],
+        donor: fallbackDonors[1],
         score: 94,
         matchFactors: ['Blood Match', '5/6 HLA Match']
     },
     {
-        recipient: recipients[4], // Robert Wilson O-
-        donor: donors[2], // David Lee O-
+        recipient: fallbackRecipients[4],
+        donor: fallbackDonors[2],
         score: 89,
         matchFactors: ['Blood Match', '4/6 HLA Match']
     }
 ];
 
+async function fetchTable(tableName, select = '*') {
+    const url = `${SUPABASE_REST}/${tableName}?select=${encodeURIComponent(select)}`;
+    const response = await fetch(url, { headers: SUPABASE_HEADERS });
+    if (!response.ok) {
+        const body = await response.text();
+        throw new Error(`Supabase ${tableName} failed: ${response.status} ${body}`);
+    }
+    return response.json();
+}
+
+function formatHlaRow(row) {
+    return HLA_FIELDS.map(field => row[field]).filter(Boolean).join(', ');
+}
+
+function buildHlaMatches({
+    donors,
+    recipients,
+    donorOrgans,
+    recipientOrgans,
+    donorHla,
+    recipientHla
+}) {
+    const donorById = new Map(donors.map(d => [d.d_id, d]));
+    const recipientById = new Map(recipients.map(r => [r.r_id, r]));
+    const donorOrganById = new Map(donorOrgans.map(o => [o.od_id, o]));
+    const recipientOrganById = new Map(recipientOrgans.map(o => [o.ro_id, o]));
+
+    const matches = [];
+    recipientHla.forEach(recHla => {
+        donorHla.forEach(donHla => {
+            const matchCount = HLA_FIELDS.reduce((count, field) => {
+                if (recHla[field] && donHla[field] && recHla[field] === donHla[field]) {
+                    return count + 1;
+                }
+                return count;
+            }, 0);
+
+            if (matchCount === 0) return;
+
+            const donorOrgan = donorOrganById.get(donHla.od_id);
+            const recipientOrgan = recipientOrganById.get(recHla.ro_id);
+            if (!donorOrgan || !recipientOrgan) return;
+
+            const donor = donorById.get(donorOrgan.d_id);
+            const recipient = recipientById.get(recipientOrgan.r_id);
+            if (!donor || !recipient) return;
+
+            const score = Math.round((matchCount / HLA_FIELDS.length) * 100);
+            const matchFactors = [`${matchCount}/6 HLA Match`];
+
+            matches.push({
+                recipient: {
+                    name: recipient.name,
+                    bloodType: 'N/A',
+                    hla: formatHlaRow(recHla)
+                },
+                donor: {
+                    name: donor.name,
+                    bloodType: 'N/A',
+                    hla: formatHlaRow(donHla)
+                },
+                score,
+                matchFactors
+            });
+        });
+    });
+
+    return matches.sort((a, b) => b.score - a.score).slice(0, 5);
+}
+
 // Initialize UI
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const recipientsList = document.getElementById('recipients-list');
     const donorsList = document.getElementById('donors-list');
     const runBtn = document.getElementById('run-matching-btn');
     const matchesPreview = document.getElementById('matches-results');
     const matchesList = document.getElementById('matches-list');
     const engineStatus = document.querySelector('.center-panel');
+    const engineStatusTitle = document.querySelector('.engine-status h3');
+    const engineStatusText = document.querySelector('.engine-status p');
+
+    let recipients = [];
+    let donors = [];
+    let matches = [];
+
+    try {
+        const [
+            recipientsData,
+            donorsData,
+            donorOrgans,
+            recipientOrgans,
+            donorHla,
+            recipientHla
+        ] = await Promise.all([
+            fetchTable('recipient'),
+            fetchTable('donor'),
+            fetchTable('donor_organ'),
+            fetchTable('recipient_organ'),
+            fetchTable('donor_hla_test'),
+            fetchTable('recipient_hla_test')
+        ]);
+
+        recipients = recipientsData.map(r => ({
+            id: `R${r.r_id}`,
+            name: r.name,
+            bloodType: 'N/A',
+            hla: 'Pending',
+            urgency: 'N/A',
+            age: 'N/A'
+        }));
+
+        donors = donorsData.map(d => ({
+            id: `D${d.d_id}`,
+            name: d.name,
+            bloodType: 'N/A',
+            hla: 'Pending',
+            age: 'N/A',
+            type: d.type === 'Alive' ? 'Living' : 'Deceased'
+        }));
+
+        matches = buildHlaMatches({
+            donors: donorsData,
+            recipients: recipientsData,
+            donorOrgans,
+            recipientOrgans,
+            donorHla,
+            recipientHla
+        });
+
+        engineStatusTitle.textContent = 'Supabase Connected';
+        engineStatusText.textContent = `Loaded ${recipients.length} recipients and ${donors.length} donors.`;
+    } catch (error) {
+        console.error(error);
+        recipients = fallbackRecipients;
+        donors = fallbackDonors;
+        matches = fallbackMatches;
+        engineStatusTitle.textContent = 'Demo Mode';
+        engineStatusText.textContent = 'Supabase connection failed. Using local demo data.';
+    }
 
     // Update Counts
     document.getElementById('recipients-count').textContent = recipients.length;
@@ -120,10 +262,10 @@ document.addEventListener('DOMContentLoaded', () => {
             runBtn.classList.add('btn-primary');
             runBtn.disabled = false;
             
-            document.querySelector('.engine-status h3').textContent = 'Analysis Complete';
-            document.querySelector('.engine-status p').textContent = `Identified ${mockMatches.length} high-probability matches based on genetic markers.`;
+            engineStatusTitle.textContent = 'Analysis Complete';
+            engineStatusText.textContent = `Identified ${matches.length} high-probability matches based on genetic markers.`;
 
-            renderMatches();
+            renderMatches(matches);
             
             matchesPreview.style.display = 'flex';
             setTimeout(() => {
@@ -133,9 +275,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 3500);
     });
 
-    function renderMatches() {
+    function renderMatches(matchResults) {
         matchesList.innerHTML = '';
-        mockMatches.forEach((match, index) => {
+        matchResults.forEach((match, index) => {
             const card = document.createElement('div');
             card.className = 'match-result-card';
             card.style.animation = `slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards ${index * 0.2}s`;
