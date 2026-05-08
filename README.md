@@ -3,6 +3,8 @@
 A lightweight web UI for a kidney transplant management demo. It reads data from Supabase (PostgreSQL) and performs a client-side matching analysis based on HLA compatibility, organ availability, waitlist status, donor type, and size fit.
 
 ## Features
+
+live at https://kidneymanagement.vercel.app/
 - Supabase-backed recipients, donors, and HLA test data
 - Deep Analysis button recalculates matches in real time
 - Urgency from `waiting_list.status`
