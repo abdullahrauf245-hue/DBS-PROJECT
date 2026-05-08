@@ -1,5 +1,5 @@
 # OrganMatchAI (DBS Kidney System)
-
+  live at    kidneymanagement.vercel.app
 A lightweight web UI for a kidney transplant management demo. It reads data from Supabase (PostgreSQL) and performs a client-side matching analysis based on HLA compatibility, organ availability, waitlist status, donor type, and size fit.
 
 ## Features
@@ -37,4 +37,4 @@ Open `index.html` directly or serve the folder with any static server.
 
 ## Notes
 - Ensure RLS allows `SELECT` for the tables above (or disable RLS for testing).
-- `.env.local` is ignored by git.
+
