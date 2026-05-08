@@ -9,6 +9,16 @@ const SUPABASE_HEADERS = {
 };
 
 const HLA_FIELDS = ['hla_a1', 'hla_a2', 'hla_b1', 'hla_b2', 'hla_dr1', 'hla_dr2'];
+const URGENCY_WEIGHTS = {
+    Active: 12,
+    Matched: 6,
+    Operated: 0,
+    Removed: -20
+};
+const DONOR_TYPE_WEIGHTS = {
+    Living: 6,
+    Deceased: 3
+};
 
 const fallbackRecipients = [
     { id: 'R001', name: 'John Doe', bloodType: 'O+', hla: 'A*02, B*07', urgency: 'High', age: 45 },
@@ -60,6 +70,27 @@ async function fetchTable(tableName, select = '*') {
 
 function formatHlaRow(row) {
     return HLA_FIELDS.map(field => row[field]).filter(Boolean).join(', ');
+}
+
+function parseSizeCm(value) {
+    if (!value) return null;
+    const match = String(value).match(/\d+(\.\d+)?/);
+    return match ? Number(match[0]) : null;
+}
+
+function getRecipientNeed(recipientOrganName) {
+    if (!recipientOrganName) return 'Any';
+    if (recipientOrganName.toLowerCase().includes('left')) return 'Left';
+    if (recipientOrganName.toLowerCase().includes('right')) return 'Right';
+    return 'Any';
+}
+
+function isOrganCompatible(recipientNeed, donorOrganName) {
+    if (recipientNeed === 'Any') return true;
+    const donorSide = donorOrganName && donorOrganName.toLowerCase().includes('left') ? 'Left'
+        : donorOrganName && donorOrganName.toLowerCase().includes('right') ? 'Right'
+            : 'Any';
+    return recipientNeed === donorSide;
 }
 
 async function loadSupabaseData() {
@@ -133,12 +164,14 @@ function buildHlaMatches({
     donorOrgans,
     recipientOrgans,
     donorHla,
-    recipientHla
+    recipientHla,
+    waitingList
 }) {
     const donorById = new Map(donors.map(d => [d.d_id, d]));
     const recipientById = new Map(recipients.map(r => [r.r_id, r]));
     const donorOrganById = new Map(donorOrgans.map(o => [o.od_id, o]));
     const recipientOrganById = new Map(recipientOrgans.map(o => [o.ro_id, o]));
+    const waitStatusByRecipient = new Map((waitingList || []).map(entry => [entry.r_id, entry.status]));
 
     const matches = [];
     recipientHla.forEach(recHla => {
@@ -156,12 +189,44 @@ function buildHlaMatches({
             const recipientOrgan = recipientOrganById.get(recHla.ro_id);
             if (!donorOrgan || !recipientOrgan) return;
 
+            if (donorOrgan.status && donorOrgan.status !== 'Available') return;
+
+            const recipientNeed = getRecipientNeed(recipientOrgan.name);
+            if (!isOrganCompatible(recipientNeed, donorOrgan.name)) return;
+
             const donor = donorById.get(donorOrgan.d_id);
             const recipient = recipientById.get(recipientOrgan.r_id);
             if (!donor || !recipient) return;
 
-            const score = Math.round((matchCount / HLA_FIELDS.length) * 100);
-            const matchFactors = [`${matchCount}/6 HLA Match`];
+            const waitStatus = waitStatusByRecipient.get(recipient.r_id) || 'N/A';
+            if (waitStatus === 'Removed') return;
+
+            const hlaScore = (matchCount / HLA_FIELDS.length) * 60;
+            const organScore = recipientNeed === 'Any' ? 8 : 12;
+            const donorType = donor.type === 'Alive' ? 'Living' : 'Deceased';
+            const donorTypeScore = DONOR_TYPE_WEIGHTS[donorType] || 0;
+            const urgencyScore = URGENCY_WEIGHTS[waitStatus] || 0;
+
+            let sizeScore = 0;
+            const donorSize = parseSizeCm(donorOrgan.size);
+            const recipientSize = parseSizeCm(recipientOrgan.size);
+            let sizeNote = null;
+            if (donorSize !== null && recipientSize !== null) {
+                const delta = Math.abs(donorSize - recipientSize);
+                if (delta <= 1) sizeScore = 6;
+                else if (delta <= 2) sizeScore = 3;
+                sizeNote = `Size delta: ${delta.toFixed(1)}cm`;
+            }
+
+            const rawScore = hlaScore + organScore + donorTypeScore + urgencyScore + sizeScore;
+            const score = Math.max(0, Math.min(100, Math.round(rawScore)));
+            const matchFactors = [
+                `${matchCount}/6 HLA Match`,
+                `Organ: ${donorOrgan.name}`,
+                `Donor: ${donorType}`,
+                `Waitlist: ${waitStatus}`
+            ];
+            if (sizeNote) matchFactors.push(sizeNote);
 
             matches.push({
                 recipient: {
