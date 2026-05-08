@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="OrganMatchAI">
+  <defs>
+    <radialGradient id="g" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#ff2d2d" stop-opacity="1" />
+      <stop offset="100%" stop-color="#0a0a0a" stop-opacity="1" />
+    </radialGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#0a0a0a" />
+  <circle cx="32" cy="32" r="22" fill="url(#g)" stroke="#ffffff" stroke-width="2" />
+  <circle cx="32" cy="18" r="3" fill="#ffffff" />
+  <circle cx="32" cy="46" r="3" fill="#ffffff" />
+  <circle cx="18" cy="32" r="3" fill="#ffffff" />
+  <circle cx="46" cy="32" r="3" fill="#ffffff" />
+  <path d="M32 21 L32 43" stroke="#ffffff" stroke-width="2" stroke-linecap="round" />
+  <path d="M21 32 L43 32" stroke="#ffffff" stroke-width="2" stroke-linecap="round" />
+</svg>
