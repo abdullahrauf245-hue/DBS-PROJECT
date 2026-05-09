@@ -20,6 +20,13 @@ const DONOR_TYPE_WEIGHTS = {
     Deceased: 3
 };
 
+const BLOOD_COMPATIBILITY = {
+    O: ['O', 'A', 'B', 'AB'],
+    A: ['A', 'AB'],
+    B: ['B', 'AB'],
+    AB: ['AB']
+};
+
 const fallbackRecipients = [
     { id: 'R001', name: 'John Doe', bloodType: 'O+', hla: 'A*02, B*07', urgency: 'High', age: 45 },
     { id: 'R002', name: 'Sarah Smith', bloodType: 'A-', hla: 'A*01, B*08', urgency: 'Medium', age: 32 },
@@ -68,6 +75,14 @@ async function fetchTable(tableName, select = '*') {
     return response.json();
 }
 
+async function fetchTableSafe(tableName, select = '*') {
+    try {
+        return await fetchTable(tableName, select);
+    } catch {
+        return [];
+    }
+}
+
 function formatHlaRow(row) {
     return HLA_FIELDS.map(field => row[field]).filter(Boolean).join(', ');
 }
@@ -76,6 +91,30 @@ function parseSizeCm(value) {
     if (!value) return null;
     const match = String(value).match(/\d+(\.\d+)?/);
     return match ? Number(match[0]) : null;
+}
+
+function normalizeBloodType(value) {
+    if (!value) return null;
+    const cleaned = String(value).toUpperCase().replace(/\s+/g, '');
+    const match = cleaned.match(/^(A|B|AB|O)([+-])?$/);
+    if (!match) return null;
+    return { abo: match[1], rh: match[2] || null, raw: cleaned };
+}
+
+function isBloodCompatible(donorType, recipientType) {
+    if (!donorType || !recipientType) return true;
+    const donor = normalizeBloodType(donorType);
+    const recipient = normalizeBloodType(recipientType);
+    if (!donor || !recipient) return true;
+    const aboAllowed = BLOOD_COMPATIBILITY[donor.abo] || [];
+    if (!aboAllowed.includes(recipient.abo)) return false;
+    if (donor.rh && recipient.rh && donor.rh === '-' && recipient.rh === '+') return true;
+    if (donor.rh && recipient.rh && donor.rh === '+' && recipient.rh === '-') return false;
+    return true;
+}
+
+function getBloodType(record) {
+    return record?.blood_type || record?.bloodType || null;
 }
 
 function getRecipientNeed(recipientOrganName) {
@@ -101,7 +140,9 @@ async function loadSupabaseData() {
         recipientOrgans,
         donorHla,
         recipientHla,
-        waitingList
+        waitingList,
+        grantApprovals,
+        legalClearances
     ] = await Promise.all([
         fetchTable('recipient'),
         fetchTable('donor'),
@@ -109,7 +150,9 @@ async function loadSupabaseData() {
         fetchTable('recipient_organ'),
         fetchTable('donor_hla_test'),
         fetchTable('recipient_hla_test'),
-        fetchTable('waiting_list')
+        fetchTable('waiting_list'),
+        fetchTableSafe('grant_approval'),
+        fetchTableSafe('legal_clearance')
     ]);
 
     return {
@@ -119,7 +162,9 @@ async function loadSupabaseData() {
         recipientOrgans,
         donorHla,
         recipientHla,
-        waitingList
+        waitingList,
+        grantApprovals,
+        legalClearances
     };
 }
 
@@ -135,7 +180,7 @@ function buildRecipientCards(data) {
     return data.recipients.map(r => ({
         id: `R${r.r_id}`,
         name: r.name,
-        bloodType: 'N/A',
+        bloodType: getBloodType(r) || 'N/A',
         hla: organByRecipient.get(r.r_id) || 'Pending',
         urgency: waitStatusByRecipient.get(r.r_id) || 'N/A',
         age: 'N/A'
@@ -151,7 +196,7 @@ function buildDonorCards(data) {
     return data.donors.map(d => ({
         id: `D${d.d_id}`,
         name: d.name,
-        bloodType: 'N/A',
+        bloodType: getBloodType(d) || 'N/A',
         hla: organByDonor.get(d.d_id) || 'Pending',
         age: 'N/A',
         type: d.type === 'Alive' ? 'Living' : 'Deceased'
@@ -165,13 +210,19 @@ function buildHlaMatches({
     recipientOrgans,
     donorHla,
     recipientHla,
-    waitingList
+    waitingList,
+    grantApprovals,
+    legalClearances
 }) {
     const donorById = new Map(donors.map(d => [d.d_id, d]));
     const recipientById = new Map(recipients.map(r => [r.r_id, r]));
     const donorOrganById = new Map(donorOrgans.map(o => [o.od_id, o]));
     const recipientOrganById = new Map(recipientOrgans.map(o => [o.ro_id, o]));
     const waitStatusByRecipient = new Map((waitingList || []).map(entry => [entry.r_id, entry.status]));
+    const grantApprovalByPair = new Set((grantApprovals || []).map(entry => `${entry.d_id}:${entry.r_id}`));
+    const legalClearanceByPair = new Map(
+        (legalClearances || []).map(entry => [`${entry.d_id}:${entry.r_id}`, entry.status])
+    );
 
     const matches = [];
     recipientHla.forEach(recHla => {
@@ -197,6 +248,17 @@ function buildHlaMatches({
             const donor = donorById.get(donorOrgan.d_id);
             const recipient = recipientById.get(recipientOrgan.r_id);
             if (!donor || !recipient) return;
+
+            if (grantApprovalByPair.size && !grantApprovalByPair.has(`${donor.d_id}:${recipient.r_id}`)) return;
+            if (legalClearanceByPair.size) {
+                const clearanceStatus = legalClearanceByPair.get(`${donor.d_id}:${recipient.r_id}`);
+                if (clearanceStatus && clearanceStatus !== 'Approved') return;
+                if (!clearanceStatus) return;
+            }
+
+            const donorBlood = getBloodType(donor);
+            const recipientBlood = getBloodType(recipient);
+            if (!isBloodCompatible(donorBlood, recipientBlood)) return;
 
             const waitStatus = waitStatusByRecipient.get(recipient.r_id) || 'N/A';
             if (waitStatus === 'Removed') return;
@@ -226,17 +288,20 @@ function buildHlaMatches({
                 `Donor: ${donorType}`,
                 `Waitlist: ${waitStatus}`
             ];
+            if (donorBlood && recipientBlood) {
+                matchFactors.push(`Blood: ${donorBlood} -> ${recipientBlood}`);
+            }
             if (sizeNote) matchFactors.push(sizeNote);
 
             matches.push({
                 recipient: {
                     name: recipient.name,
-                    bloodType: 'N/A',
+                    bloodType: recipientBlood || 'N/A',
                     hla: formatHlaRow(recHla)
                 },
                 donor: {
                     name: donor.name,
-                    bloodType: 'N/A',
+                    bloodType: donorBlood || 'N/A',
                     hla: formatHlaRow(donHla)
                 },
                 score,
@@ -417,7 +482,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         recipientOrgans: [],
         donorHla: [],
         recipientHla: [],
-        waitingList: []
+        waitingList: [],
+        grantApprovals: [],
+        legalClearances: []
     };
 
     const updateSummary = (data) => {
