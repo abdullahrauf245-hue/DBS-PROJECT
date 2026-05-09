@@ -365,11 +365,47 @@ document.addEventListener('DOMContentLoaded', async () => {
     const availableOrgansEl = document.getElementById('available-organs-count');
     const activeWaitlistEl = document.getElementById('active-waitlist-count');
     const lastSyncEl = document.getElementById('last-sync-time');
+    const panelToggles = document.querySelectorAll('.panel-toggle');
+    const panelMedia = window.matchMedia('(max-width: 980px)');
+    const compactMedia = window.matchMedia('(max-width: 720px)');
 
     const getInitials = (name) => {
         if (name === 'Anonymous') return 'AN';
         return name.split(' ').map(n => n[0]).join('');
     };
+
+    const setPanelCollapsed = (toggle, shouldCollapse) => {
+        const panel = toggle.closest('.panel');
+        if (!panel) return;
+        panel.classList.toggle('is-collapsed', shouldCollapse);
+        toggle.setAttribute('aria-expanded', String(!shouldCollapse));
+    };
+
+    panelToggles.forEach((toggle) => {
+        toggle.addEventListener('click', () => {
+            const panel = toggle.closest('.panel');
+            if (!panel) return;
+            const isCollapsed = panel.classList.contains('is-collapsed');
+            setPanelCollapsed(toggle, !isCollapsed);
+        });
+    });
+
+    const syncPanelLayout = () => {
+        if (!panelMedia.matches) {
+            panelToggles.forEach(toggle => setPanelCollapsed(toggle, false));
+            return;
+        }
+
+        if (compactMedia.matches) {
+            panelToggles.forEach((toggle, index) => {
+                setPanelCollapsed(toggle, index > 0);
+            });
+        }
+    };
+
+    syncPanelLayout();
+    panelMedia.addEventListener('change', syncPanelLayout);
+    compactMedia.addEventListener('change', syncPanelLayout);
 
     let recipients = [];
     let donors = [];

@@ -272,6 +272,10 @@ h1, h2, h3, h4, h5, h6 {
     height: 100%;
 }
 
+.panel {
+    min-height: 0;
+}
+
 /* ==========================================
    Responsive
    ========================================== */
@@ -314,10 +318,19 @@ h1, h2, h3, h4, h5, h6 {
 
     .center-panel {
         align-content: start;
+        order: 1;
+    }
+
+    .panel {
+        order: 2;
     }
 
     .matches-preview {
         max-height: 380px;
+    }
+
+    .panel-toggle {
+        display: inline-flex;
     }
 }
 
@@ -346,6 +359,12 @@ h1, h2, h3, h4, h5, h6 {
     .header-actions {
         width: 100%;
         justify-content: space-between;
+        flex-wrap: wrap;
+    }
+
+    .header-actions .btn {
+        flex: 1 1 180px;
+        justify-content: center;
     }
 
     .btn {
@@ -357,6 +376,25 @@ h1, h2, h3, h4, h5, h6 {
         width: 100%;
         padding: 16px 24px;
         font-size: 14px;
+        position: sticky;
+        bottom: 12px;
+        z-index: 20;
+    }
+
+    .center-panel {
+        padding-bottom: 44px;
+    }
+
+    .status-ring {
+        width: 96px;
+        height: 96px;
+        margin-bottom: 12px;
+    }
+
+    .ring-inner {
+        width: 70px;
+        height: 70px;
+        font-size: 28px;
     }
 
     .engine-status h3 {
@@ -411,8 +449,36 @@ h1, h2, h3, h4, h5, h6 {
         font-size: 14px;
     }
 
+    .analysis-meta {
+        padding: 14px;
+    }
+
+    .stat-value {
+        font-size: 18px;
+    }
+
     .match-result-card {
         padding: 14px;
+    }
+}
+
+@media (max-width: 400px) {
+    .glass-header {
+        padding: 14px 16px;
+    }
+
+    .brand h1 {
+        font-size: 20px;
+    }
+
+    .btn {
+        padding: 9px 14px;
+        font-size: 12px;
+    }
+
+    #run-matching-btn {
+        padding: 14px 18px;
+        letter-spacing: 0.08em;
     }
 }
 
@@ -435,6 +501,41 @@ h1, h2, h3, h4, h5, h6 {
     justify-content: space-between;
     align-items: center;
     background: rgba(255, 255, 255, 0.02);
+}
+
+.panel-toggle {
+    display: none;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-main);
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.panel-toggle i {
+    transition: var(--transition-fast);
+}
+
+.panel-toggle:hover {
+    background: var(--glass-highlight);
+    border-color: var(--text-main);
+}
+
+.panel.is-collapsed .list-container {
+    display: none;
+}
+
+.panel.is-collapsed .panel-header {
+    border-bottom: none;
+}
+
+.panel.is-collapsed .panel-toggle i {
+    transform: rotate(-90deg);
 }
 
 .panel-header h2 {
