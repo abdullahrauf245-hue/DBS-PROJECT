@@ -236,7 +236,7 @@ function buildRecipientCards(data) {
         hla: organByRecipient.get(r.r_id) || 'Pending',
         urgency: waitStatusByRecipient.get(r.r_id) || 'Active',
         age: 'N/A',
-        waitDate: waitDateByRecipient.get(r.r_id) || r.created_at || null
+        waitDate: waitDateByRecipient.get(r.r_id) || r.created_at || '2026-05-12'
     }));
 }
 
@@ -253,7 +253,7 @@ function buildDonorCards(data) {
         hla: organByDonor.get(d.d_id) || 'Pending',
         age: 'N/A',
         type: d.type === 'Alive' ? 'Living' : 'Deceased',
-        donationDate: d.donation_date || d.created_at || null
+        donationDate: d.donation_date || d.created_at || '2026-05-12'
     }));
 }
 
