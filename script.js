@@ -121,6 +121,12 @@ function getTimeString(date = new Date()) {
     return date.toTimeString().slice(0, 8);
 }
 
+function formatDateForDisplay(value) {
+    if (!value) return '--';
+    const raw = String(value);
+    return raw.length >= 10 ? raw.slice(0, 10) : raw;
+}
+
 function cleanValue(value) {
     const trimmed = String(value || '').trim();
     return trimmed.length ? trimmed : null;
@@ -219,6 +225,9 @@ function buildRecipientCards(data) {
     const waitStatusByRecipient = new Map(
         (data.waitingList || []).map(entry => [entry.r_id, entry.status])
     );
+    const waitDateByRecipient = new Map(
+        (data.waitingList || []).map(entry => [entry.r_id, entry.date_added])
+    );
 
     return data.recipients.map(r => ({
         id: `R${r.r_id}`,
@@ -226,7 +235,8 @@ function buildRecipientCards(data) {
         bloodType: getBloodType(r) || 'N/A',
         hla: organByRecipient.get(r.r_id) || 'Pending',
         urgency: waitStatusByRecipient.get(r.r_id) || 'N/A',
-        age: 'N/A'
+        age: 'N/A',
+        waitDate: waitDateByRecipient.get(r.r_id) || null
     }));
 }
 
@@ -242,7 +252,8 @@ function buildDonorCards(data) {
         bloodType: getBloodType(d) || 'N/A',
         hla: organByDonor.get(d.d_id) || 'Pending',
         age: 'N/A',
-        type: d.type === 'Alive' ? 'Living' : 'Deceased'
+        type: d.type === 'Alive' ? 'Living' : 'Deceased',
+        donationDate: d.donation_date || null
     }));
 }
 
@@ -385,6 +396,9 @@ function renderRecipients(list, container, initialsFn) {
                         <i class="fa-solid fa-circle-exclamation"></i> ${p.urgency}
                     </span>
                 </div>
+                <div class="date-row">
+                    <span class="date-chip"><i class="fa-solid fa-calendar-days"></i> Waitlist: ${formatDateForDisplay(p.waitDate)}</span>
+                </div>
             </div>
         `;
         container.appendChild(card);
@@ -408,6 +422,9 @@ function renderDonors(list, container, initialsFn) {
                     <span class="trait-badge trait-blood"><i class="fa-solid fa-droplet"></i> ${d.bloodType}</span>
                     <span class="trait-badge trait-hla">HLA: ${d.hla}</span>
                     <span class="trait-badge"><i class="fa-solid fa-user-tag"></i> ${d.type}</span>
+                </div>
+                <div class="date-row">
+                    <span class="date-chip"><i class="fa-solid fa-calendar-days"></i> Donation: ${formatDateForDisplay(d.donationDate)}</span>
                 </div>
             </div>
         `;
