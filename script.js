@@ -226,7 +226,7 @@ function buildRecipientCards(data) {
         (data.waitingList || []).map(entry => [entry.r_id, entry.status])
     );
     const waitDateByRecipient = new Map(
-        (data.waitingList || []).map(entry => [entry.r_id, entry.date_added])
+        (data.waitingList || []).map(entry => [entry.r_id, entry.date_added || entry.created_at])
     );
 
     return data.recipients.map(r => ({
@@ -234,9 +234,9 @@ function buildRecipientCards(data) {
         name: r.name,
         bloodType: getBloodType(r) || 'N/A',
         hla: organByRecipient.get(r.r_id) || 'Pending',
-        urgency: waitStatusByRecipient.get(r.r_id) || 'N/A',
+        urgency: waitStatusByRecipient.get(r.r_id) || 'Active',
         age: 'N/A',
-        waitDate: waitDateByRecipient.get(r.r_id) || null
+        waitDate: waitDateByRecipient.get(r.r_id) || r.created_at || null
     }));
 }
 
@@ -253,7 +253,7 @@ function buildDonorCards(data) {
         hla: organByDonor.get(d.d_id) || 'Pending',
         age: 'N/A',
         type: d.type === 'Alive' ? 'Living' : 'Deceased',
-        donationDate: d.donation_date || null
+        donationDate: d.donation_date || d.created_at || null
     }));
 }
 
@@ -886,6 +886,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const bloodType = cleanValue(formData.get('blood_type'));
         const phone = cleanValue(formData.get('phone'));
         const waitStatus = cleanValue(formData.get('wait_status')) || 'Active';
+        const waitlistDate = cleanValue(formData.get('waitlist_date')) || getDateString();
         const organNeed = cleanValue(formData.get('recipient_need')) || 'Any';
         const organSize = cleanValue(formData.get('organ_size'));
 
@@ -921,7 +922,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await insertRow('waiting_list', {
             w_id: wId,
             r_id: rId,
-            date_added: getDateString(),
+            date_added: waitlistDate,
             time_added: getTimeString(),
             status: waitStatus
         });
