@@ -423,6 +423,15 @@ h1, h2, h3, h4, h5, h6 {
         flex-direction: row;
         text-align: left;
     }
+
+    .match-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .match-value {
+        text-align: left;
+    }
 }
 
 @media (max-width: 520px) {
@@ -665,7 +674,7 @@ h1, h2, h3, h4, h5, h6 {
    ========================================== */
 .center-panel {
     display: grid;
-    grid-template-rows: auto auto auto;
+    grid-template-rows: auto auto auto auto;
     gap: 28px;
     padding: 24px;
     position: relative;
@@ -769,18 +778,25 @@ h1, h2, h3, h4, h5, h6 {
 /* Matches Preview Panel */
 .matches-preview {
     width: 100%;
-    max-height: 500px;
+    max-height: 0;
     opacity: 0;
-    transform: translateY(20px);
-    transition: var(--transition-smooth);
-    display: none; /* hidden initially */
+    transform: translateY(12px) scaleY(0.98);
+    transform-origin: top center;
+    transition:
+        max-height 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+        opacity 0.35s ease,
+        transform 0.35s ease;
+    display: flex;
     flex-direction: column;
+    overflow: hidden;
+    pointer-events: none;
 }
 
-.matches-preview.visible {
-    display: flex;
+.matches-preview.is-open {
+    max-height: 640px;
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scaleY(1);
+    pointer-events: auto;
 }
 
 .matches-list {
@@ -874,6 +890,51 @@ h1, h2, h3, h4, h5, h6 {
     background: rgba(0,0,0,0.3);
     border-radius: var(--border-radius-sm);
     padding: 16px;
+}
+
+.match-meta {
+    margin-top: 14px;
+    display: grid;
+    gap: 10px;
+}
+
+.match-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.match-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--text-muted);
+    font-family: 'Space Mono', monospace;
+}
+
+.match-value {
+    font-size: 12px;
+    color: var(--accent-secondary);
+    font-family: 'Space Mono', monospace;
+    text-align: right;
+    word-break: break-word;
+}
+
+.match-factors {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.factor-chip {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(255, 45, 45, 0.12);
+    color: var(--accent-secondary);
+    border: 1px solid rgba(255, 45, 45, 0.35);
+    font-family: 'Space Mono', monospace;
 }
 
 .match-person {

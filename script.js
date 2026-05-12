@@ -380,6 +380,12 @@ function renderMatches(matchResults, matchesList, initialsFn) {
         card.style.opacity = '0';
 
         const color = match.score > 90 ? '#ffffff' : match.score > 80 ? '#ff7a7a' : '#ff2d2d';
+        const factors = Array.isArray(match.matchFactors) ? match.matchFactors : [];
+        const recipientHla = match.recipient?.hla || 'N/A';
+        const donorHla = match.donor?.hla || 'N/A';
+        const factorsMarkup = factors.length
+            ? `<div class="match-factors">${factors.map(factor => `<span class="factor-chip">${factor}</span>`).join('')}</div>`
+            : '';
 
         card.innerHTML = `
             <div class="match-header">
@@ -412,6 +418,17 @@ function renderMatches(matchResults, matchesList, initialsFn) {
                     </div>
                 </div>
             </div>
+            <div class="match-meta">
+                <div class="match-row">
+                    <span class="match-label">Recipient HLA</span>
+                    <span class="match-value">${recipientHla}</span>
+                </div>
+                <div class="match-row">
+                    <span class="match-label">Donor HLA</span>
+                    <span class="match-value">${donorHla}</span>
+                </div>
+                ${factorsMarkup}
+            </div>
         `;
         matchesList.appendChild(card);
     });
@@ -433,6 +450,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const panelToggles = document.querySelectorAll('.panel-toggle');
     const panelMedia = window.matchMedia('(max-width: 980px)');
     const compactMedia = window.matchMedia('(max-width: 720px)');
+
+    const setMatchesOpen = (shouldOpen) => {
+        matchesPreview.classList.toggle('is-open', shouldOpen);
+    };
+
+    const setRunButtonToRerun = () => {
+        runBtn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Rerun Analysis';
+        runBtn.classList.remove('btn-outline');
+        runBtn.classList.add('btn-primary', 'btn-glow');
+        runBtn.disabled = false;
+    };
 
     const getInitials = (name) => {
         if (name === 'Anonymous') return 'AN';
@@ -526,6 +554,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     renderRecipients(recipients, recipientsList, getInitials);
     renderDonors(donors, donorsList, getInitials);
+    renderMatches(matches, matchesList, getInitials);
+
+    if (matches.length) {
+        engineStatusTitle.textContent = 'Analysis Complete';
+        engineStatusText.textContent = `Identified ${matches.length} high-probability matches based on genetic markers.`;
+        setRunButtonToRerun();
+        setMatchesOpen(true);
+    } else {
+        setMatchesOpen(false);
+    }
 
     runBtn.addEventListener('click', async () => {
         engineStatus.classList.add('is-matching');
@@ -534,10 +572,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         runBtn.classList.remove('btn-primary', 'btn-glow');
         runBtn.disabled = true;
 
-        matchesPreview.classList.remove('visible');
-        setTimeout(() => {
-            matchesPreview.style.display = 'none';
-        }, 300);
+        setMatchesOpen(false);
 
         engineStatusTitle.textContent = 'Matching In Progress';
         engineStatusText.textContent = 'Loading latest donor and recipient data.';
@@ -576,20 +611,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         setTimeout(() => {
             engineStatus.classList.remove('is-matching');
-            runBtn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Rerun Analysis';
-            runBtn.classList.remove('btn-outline');
-            runBtn.classList.add('btn-primary');
-            runBtn.disabled = false;
+            setRunButtonToRerun();
 
             engineStatusTitle.textContent = 'Analysis Complete';
             engineStatusText.textContent = `Identified ${matches.length} high-probability matches based on genetic markers.`;
 
             renderMatches(matches, matchesList, getInitials);
-
-            matchesPreview.style.display = 'flex';
-            setTimeout(() => {
-                matchesPreview.classList.add('visible');
-            }, 50);
+            setMatchesOpen(true);
 
         }, 900);
     });

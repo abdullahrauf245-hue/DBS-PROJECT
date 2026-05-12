@@ -67,6 +67,15 @@
                         <h3>Matching Engine Ready</h3>
                         <p>Cross-matching HLA, Blood Type, and Age factors.</p>
                     </div>
+
+                    <div class="matches-preview glass-panel" id="matches-results">
+                        <div class="panel-header">
+                            <h2><i class="fa-solid fa-handshake"></i> Top Matches Found</h2>
+                        </div>
+                        <div class="matches-list" id="matches-list">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
                     
                     <button class="btn btn-primary btn-glow" id="run-matching-btn">
                         <i class="fa-solid fa-bolt"></i> Run Deep Analysis
@@ -87,15 +96,6 @@
                             <i class="fa-solid fa-clock"></i>
                             <span>Last sync:</span>
                             <span id="last-sync-time">--</span>
-                        </div>
-                    </div>
-
-                    <div class="matches-preview glass-panel hidden" id="matches-results">
-                        <div class="panel-header">
-                            <h2><i class="fa-solid fa-handshake"></i> Top Matches Found</h2>
-                        </div>
-                        <div class="matches-list" id="matches-list">
-                            <!-- Populated by JS -->
                         </div>
                     </div>
                 </div>
