@@ -554,16 +554,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     renderRecipients(recipients, recipientsList, getInitials);
     renderDonors(donors, donorsList, getInitials);
-    renderMatches(matches, matchesList, getInitials);
-
-    if (matches.length) {
-        engineStatusTitle.textContent = 'Analysis Complete';
-        engineStatusText.textContent = `Identified ${matches.length} high-probability matches based on genetic markers.`;
-        setRunButtonToRerun();
-        setMatchesOpen(true);
-    } else {
-        setMatchesOpen(false);
-    }
+    setMatchesOpen(false);
 
     runBtn.addEventListener('click', async () => {
         engineStatus.classList.add('is-matching');
