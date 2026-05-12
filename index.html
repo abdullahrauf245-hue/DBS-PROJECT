@@ -118,6 +118,42 @@
         </main>
     </div>
 
+    <div class="match-modal" id="match-modal" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="match-modal__backdrop" data-close="true"></div>
+        <div class="match-modal__panel" role="document">
+            <div class="match-modal__header">
+                <div>
+                    <h3>Case Review</h3>
+                    <p id="match-modal-subtitle">Match details</p>
+                </div>
+                <button class="match-modal__close" type="button" aria-label="Close case review">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="match-modal__content">
+                <div class="match-modal__score">
+                    <div class="score-circle" id="match-modal-score">--</div>
+                    <div class="score-label">Compatibility Score</div>
+                </div>
+                <div class="match-modal__grid">
+                    <div class="match-modal__block">
+                        <h4>Recipient</h4>
+                        <p class="match-modal__name" id="match-modal-recipient">--</p>
+                        <p class="match-modal__meta" id="match-modal-recipient-blood">Blood: --</p>
+                        <p class="match-modal__meta" id="match-modal-recipient-hla">HLA: --</p>
+                    </div>
+                    <div class="match-modal__block">
+                        <h4>Donor</h4>
+                        <p class="match-modal__name" id="match-modal-donor">--</p>
+                        <p class="match-modal__meta" id="match-modal-donor-blood">Blood: --</p>
+                        <p class="match-modal__meta" id="match-modal-donor-hla">HLA: --</p>
+                    </div>
+                </div>
+                <div class="match-modal__factors" id="match-modal-factors"></div>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>

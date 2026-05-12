@@ -366,6 +366,13 @@ function renderDonors(list, container, initialsFn) {
     });
 }
 
+function getScoreColor(score) {
+    if (typeof score !== 'number') return '#ff2d2d';
+    if (score > 90) return '#ffffff';
+    if (score > 80) return '#ff7a7a';
+    return '#ff2d2d';
+}
+
 function renderMatches(matchResults, matchesList, initialsFn) {
     matchesList.innerHTML = '';
     if (!matchResults.length) {
@@ -379,7 +386,7 @@ function renderMatches(matchResults, matchesList, initialsFn) {
         card.style.animation = `slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards ${index * 0.2}s`;
         card.style.opacity = '0';
 
-        const color = match.score > 90 ? '#ffffff' : match.score > 80 ? '#ff7a7a' : '#ff2d2d';
+        const color = getScoreColor(match.score);
         const factors = Array.isArray(match.matchFactors) ? match.matchFactors : [];
         const recipientHla = match.recipient?.hla || 'N/A';
         const donorHla = match.donor?.hla || 'N/A';
@@ -395,7 +402,7 @@ function renderMatches(matchResults, matchesList, initialsFn) {
                     </div>
                     <div class="score-label">Compatibility Score</div>
                 </div>
-                <button class="match-action">Review Case</button>
+                <button class="match-action" data-match-index="${index}">Review Case</button>
             </div>
             <div class="match-details">
                     <div class="match-person recipient">
@@ -441,6 +448,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const runBtn = document.getElementById('run-matching-btn');
     const matchesPreview = document.getElementById('matches-results');
     const matchesList = document.getElementById('matches-list');
+    const matchModal = document.getElementById('match-modal');
+    const matchModalClose = matchModal ? matchModal.querySelector('.match-modal__close') : null;
+    const matchModalBackdrop = matchModal ? matchModal.querySelector('.match-modal__backdrop') : null;
+    const matchModalSubtitle = document.getElementById('match-modal-subtitle');
+    const matchModalScore = document.getElementById('match-modal-score');
+    const matchModalRecipient = document.getElementById('match-modal-recipient');
+    const matchModalRecipientBlood = document.getElementById('match-modal-recipient-blood');
+    const matchModalRecipientHla = document.getElementById('match-modal-recipient-hla');
+    const matchModalDonor = document.getElementById('match-modal-donor');
+    const matchModalDonorBlood = document.getElementById('match-modal-donor-blood');
+    const matchModalDonorHla = document.getElementById('match-modal-donor-hla');
+    const matchModalFactors = document.getElementById('match-modal-factors');
     const engineStatus = document.querySelector('.center-panel');
     const engineStatusTitle = document.querySelector('.engine-status h3');
     const engineStatusText = document.querySelector('.engine-status p');
@@ -454,6 +473,44 @@ document.addEventListener('DOMContentLoaded', async () => {
     const setMatchesOpen = (shouldOpen) => {
         matchesPreview.classList.toggle('is-open', shouldOpen);
     };
+
+    const setMatchModalOpen = (shouldOpen) => {
+        if (!matchModal) return;
+        matchModal.classList.toggle('is-open', shouldOpen);
+        matchModal.setAttribute('aria-hidden', String(!shouldOpen));
+        document.body.classList.toggle('modal-open', shouldOpen);
+        if (shouldOpen && matchModalClose) {
+            matchModalClose.focus();
+        }
+    };
+
+    const fillMatchModal = (match) => {
+        if (!matchModal) return;
+        const color = getScoreColor(match.score);
+        const factors = Array.isArray(match.matchFactors) ? match.matchFactors : [];
+        if (matchModalSubtitle) {
+            matchModalSubtitle.textContent = `${match.recipient?.name || 'Recipient'} vs ${match.donor?.name || 'Donor'}`;
+        }
+        if (matchModalScore) {
+            matchModalScore.textContent = `${match.score}%`;
+            matchModalScore.style.color = color;
+            matchModalScore.style.borderColor = color;
+            matchModalScore.style.boxShadow = `0 0 20px ${color}40`;
+        }
+        if (matchModalRecipient) matchModalRecipient.textContent = match.recipient?.name || 'N/A';
+        if (matchModalRecipientBlood) matchModalRecipientBlood.textContent = `Blood: ${match.recipient?.bloodType || 'N/A'}`;
+        if (matchModalRecipientHla) matchModalRecipientHla.textContent = `HLA: ${match.recipient?.hla || 'N/A'}`;
+        if (matchModalDonor) matchModalDonor.textContent = match.donor?.name || 'N/A';
+        if (matchModalDonorBlood) matchModalDonorBlood.textContent = `Blood: ${match.donor?.bloodType || 'N/A'}`;
+        if (matchModalDonorHla) matchModalDonorHla.textContent = `HLA: ${match.donor?.hla || 'N/A'}`;
+        if (matchModalFactors) {
+            matchModalFactors.innerHTML = factors.length
+                ? factors.map(factor => `<span class="factor-chip">${factor}</span>`).join('')
+                : '<span class="factor-chip">No additional factors logged.</span>';
+        }
+    };
+
+    const closeMatchModal = () => setMatchModalOpen(false);
 
     const setRunButtonToRerun = () => {
         runBtn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Rerun Analysis';
@@ -499,6 +556,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     syncPanelLayout();
     panelMedia.addEventListener('change', syncPanelLayout);
     compactMedia.addEventListener('change', syncPanelLayout);
+
+    if (matchesList) {
+        matchesList.addEventListener('click', (event) => {
+            const actionButton = event.target.closest('.match-action');
+            if (!actionButton) return;
+            const matchIndex = Number(actionButton.dataset.matchIndex);
+            if (!Number.isFinite(matchIndex)) return;
+            const match = matches[matchIndex];
+            if (!match) return;
+            fillMatchModal(match);
+            setMatchModalOpen(true);
+        });
+    }
+
+    if (matchModalBackdrop) {
+        matchModalBackdrop.addEventListener('click', closeMatchModal);
+    }
+
+    if (matchModalClose) {
+        matchModalClose.addEventListener('click', closeMatchModal);
+    }
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && matchModal && matchModal.classList.contains('is-open')) {
+            closeMatchModal();
+        }
+    });
 
     let recipients = [];
     let donors = [];
