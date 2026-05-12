@@ -43,10 +43,15 @@
                 <div class="panel glass-panel">
                     <div class="panel-header">
                         <h2><i class="fa-solid fa-user-injured"></i> Recipients</h2>
-                        <span class="badge" id="recipients-count">0</span>
-                        <button class="panel-toggle" type="button" aria-expanded="true" aria-controls="recipients-list">
-                            <i class="fa-solid fa-chevron-down"></i>
-                        </button>
+                        <div class="panel-controls">
+                            <span class="badge" id="recipients-count">0</span>
+                            <button class="panel-action" id="add-recipient-btn" type="button">
+                                <i class="fa-solid fa-plus"></i> Add
+                            </button>
+                            <button class="panel-toggle" type="button" aria-expanded="true" aria-controls="recipients-list">
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="list-container" id="recipients-list">
                         <!-- Populated by JS -->
@@ -101,10 +106,15 @@
                 <div class="panel glass-panel">
                     <div class="panel-header">
                         <h2><i class="fa-solid fa-hand-holding-medical"></i> Available Donors</h2>
-                        <span class="badge" id="donors-count">0</span>
-                        <button class="panel-toggle" type="button" aria-expanded="true" aria-controls="donors-list">
-                            <i class="fa-solid fa-chevron-down"></i>
-                        </button>
+                        <div class="panel-controls">
+                            <span class="badge" id="donors-count">0</span>
+                            <button class="panel-action" id="add-donor-btn" type="button">
+                                <i class="fa-solid fa-plus"></i> Add
+                            </button>
+                            <button class="panel-toggle" type="button" aria-expanded="true" aria-controls="donors-list">
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="list-container" id="donors-list">
                         <!-- Populated by JS -->
@@ -148,6 +158,122 @@
                 </div>
                 <div class="match-modal__factors" id="match-modal-factors"></div>
             </div>
+        </div>
+    </div>
+
+    <div class="form-modal" id="add-record-modal" role="dialog" aria-modal="true" aria-hidden="true" data-role="recipient">
+        <div class="form-modal__backdrop" data-close="true"></div>
+        <div class="form-modal__panel" role="document">
+            <div class="form-modal__header">
+                <div>
+                    <h3 id="add-record-title">Add Recipient</h3>
+                    <p id="add-record-subtitle">Create a new profile in Supabase.</p>
+                </div>
+                <button class="form-modal__close" type="button" aria-label="Close add form">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <form class="form-modal__form" id="add-record-form">
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label for="record-name">Full Name</label>
+                        <input id="record-name" name="name" type="text" placeholder="e.g. Ayesha Malik" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="record-phone">Phone (optional)</label>
+                        <input id="record-phone" name="phone" type="text" placeholder="03xx-xxxxxxx">
+                    </div>
+                    <div class="form-field">
+                        <label for="record-blood">Blood Type</label>
+                        <select id="record-blood" name="blood_type" required>
+                            <option value="">Select...</option>
+                            <option value="O-">O-</option>
+                            <option value="O+">O+</option>
+                            <option value="A-">A-</option>
+                            <option value="A+">A+</option>
+                            <option value="B-">B-</option>
+                            <option value="B+">B+</option>
+                            <option value="AB-">AB-</option>
+                            <option value="AB+">AB+</option>
+                        </select>
+                    </div>
+                    <div class="form-field form-only-donor">
+                        <label for="record-donor-type">Donor Type</label>
+                        <select id="record-donor-type" name="donor_type">
+                            <option value="Alive">Living</option>
+                            <option value="Dead">Deceased</option>
+                        </select>
+                    </div>
+                    <div class="form-field form-only-donor">
+                        <label for="record-donation-date">Donation Date</label>
+                        <input id="record-donation-date" name="donation_date" type="date">
+                    </div>
+                    <div class="form-field form-only-recipient">
+                        <label for="record-wait-status">Waitlist Status</label>
+                        <select id="record-wait-status" name="wait_status">
+                            <option value="Active">Active</option>
+                            <option value="Matched">Matched</option>
+                            <option value="Operated">Operated</option>
+                            <option value="Removed">Removed</option>
+                        </select>
+                    </div>
+                    <div class="form-field form-only-donor">
+                        <label for="record-organ">Organ Side</label>
+                        <select id="record-organ" name="donor_organ" required>
+                            <option value="Left Kidney">Left Kidney</option>
+                            <option value="Right Kidney">Right Kidney</option>
+                        </select>
+                    </div>
+                    <div class="form-field form-only-recipient">
+                        <label for="record-need">Need</label>
+                        <select id="record-need" name="recipient_need" required>
+                            <option value="Any">Any</option>
+                            <option value="Waiting for Left">Waiting for Left</option>
+                            <option value="Waiting for Right">Waiting for Right</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label for="record-size">Organ Size (optional)</label>
+                        <input id="record-size" name="organ_size" type="text" placeholder="10cm">
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h4>HLA (optional)</h4>
+                    <div class="form-grid">
+                        <div class="form-field">
+                            <label for="hla-a1">HLA A1</label>
+                            <input id="hla-a1" name="hla_a1" type="text" placeholder="02:01">
+                        </div>
+                        <div class="form-field">
+                            <label for="hla-a2">HLA A2</label>
+                            <input id="hla-a2" name="hla_a2" type="text" placeholder="24:02">
+                        </div>
+                        <div class="form-field">
+                            <label for="hla-b1">HLA B1</label>
+                            <input id="hla-b1" name="hla_b1" type="text" placeholder="07:02">
+                        </div>
+                        <div class="form-field">
+                            <label for="hla-b2">HLA B2</label>
+                            <input id="hla-b2" name="hla_b2" type="text" placeholder="15:01">
+                        </div>
+                        <div class="form-field">
+                            <label for="hla-dr1">HLA DR1</label>
+                            <input id="hla-dr1" name="hla_dr1" type="text" placeholder="04:01">
+                        </div>
+                        <div class="form-field">
+                            <label for="hla-dr2">HLA DR2</label>
+                            <input id="hla-dr2" name="hla_dr2" type="text" placeholder="13:01">
+                        </div>
+                    </div>
+                </div>
+
+                <p class="form-message" id="add-record-message"></p>
+                <div class="form-actions">
+                    <button class="btn btn-outline" type="button" data-close="true">Cancel</button>
+                    <button class="btn btn-primary" type="submit"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+                </div>
+            </form>
         </div>
     </div>
 

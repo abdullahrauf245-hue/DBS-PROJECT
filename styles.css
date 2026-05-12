@@ -443,6 +443,19 @@ h1, h2, h3, h4, h5, h6 {
         grid-template-columns: 1fr;
     }
 
+    .form-modal__panel {
+        padding: 18px;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .panel-action {
+        padding: 6px 10px;
+        font-size: 11px;
+    }
+
     .engine-status h3 {
         font-size: 20px;
     }
@@ -560,6 +573,33 @@ h1, h2, h3, h4, h5, h6 {
     justify-content: space-between;
     align-items: center;
     background: rgba(255, 255, 255, 0.02);
+}
+
+.panel-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.panel-action {
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-main);
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: var(--transition-fast);
+}
+
+.panel-action:hover {
+    background: var(--glass-highlight);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
 }
 
 .panel-toggle {
@@ -1209,6 +1249,166 @@ h1, h2, h3, h4, h5, h6 {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
+}
+
+/* Add Record Modal */
+.form-modal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 220;
+}
+
+.form-modal.is-open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.form-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(6px);
+}
+
+.form-modal__panel {
+    position: relative;
+    width: min(820px, 94vw);
+    max-height: 90vh;
+    background: rgba(7, 7, 7, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 24px;
+    padding: 22px 24px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.55);
+    transform: translateY(18px) scale(0.98);
+    transition: transform 0.3s ease;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.form-modal.is-open .form-modal__panel {
+    transform: translateY(0) scale(1);
+}
+
+.form-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.form-modal__header h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.form-modal__header p {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.form-modal__close {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-main);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.form-modal__close:hover {
+    background: var(--glass-highlight);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+.form-modal__form {
+    display: grid;
+    gap: 18px;
+    overflow-y: auto;
+    max-height: calc(90vh - 140px);
+    padding-right: 4px;
+}
+
+.form-section h4 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    font-family: 'Space Mono', monospace;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-field label {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.form-field input,
+.form-field select {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 12px;
+    color: var(--text-main);
+    padding: 10px 12px;
+    font-size: 13px;
+    font-family: 'Space Grotesk', sans-serif;
+    outline: none;
+    transition: var(--transition-fast);
+}
+
+.form-field input:focus,
+.form-field select:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(255, 45, 45, 0.2);
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.form-message {
+    min-height: 18px;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.form-message.is-error {
+    color: #ff7a7a;
+}
+
+.form-message.is-success {
+    color: #a4f4d1;
+}
+
+.is-hidden {
+    display: none;
 }
 
 @keyframes pulse {

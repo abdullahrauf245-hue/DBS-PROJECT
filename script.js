@@ -8,6 +8,12 @@ const SUPABASE_HEADERS = {
     Authorization: `Bearer ${SUPABASE_ANON_KEY}`
 };
 
+const SUPABASE_WRITE_HEADERS = {
+    ...SUPABASE_HEADERS,
+    'Content-Type': 'application/json',
+    Prefer: 'return=representation'
+};
+
 const HLA_FIELDS = ['hla_a1', 'hla_a2', 'hla_b1', 'hla_b2', 'hla_dr1', 'hla_dr2'];
 const URGENCY_WEIGHTS = {
     Active: 12,
@@ -81,6 +87,43 @@ async function fetchTableSafe(tableName, select = '*') {
     } catch {
         return [];
     }
+}
+
+async function fetchLatestId(tableName, idField) {
+    const url = `${SUPABASE_REST}/${tableName}?select=${encodeURIComponent(idField)}&order=${idField}.desc&limit=1`;
+    const response = await fetch(url, { headers: SUPABASE_HEADERS });
+    if (!response.ok) {
+        const body = await response.text();
+        throw new Error(`Supabase ${tableName} latest id failed: ${response.status} ${body}`);
+    }
+    const rows = await response.json();
+    return rows?.[0]?.[idField] ?? 0;
+}
+
+async function insertRow(tableName, payload) {
+    const response = await fetch(`${SUPABASE_REST}/${tableName}`, {
+        method: 'POST',
+        headers: SUPABASE_WRITE_HEADERS,
+        body: JSON.stringify(payload)
+    });
+    if (!response.ok) {
+        const body = await response.text();
+        throw new Error(`Supabase ${tableName} insert failed: ${response.status} ${body}`);
+    }
+    return response.json();
+}
+
+function getDateString(date = new Date()) {
+    return date.toISOString().slice(0, 10);
+}
+
+function getTimeString(date = new Date()) {
+    return date.toTimeString().slice(0, 8);
+}
+
+function cleanValue(value) {
+    const trimmed = String(value || '').trim();
+    return trimmed.length ? trimmed : null;
 }
 
 function formatHlaRow(row) {
@@ -463,6 +506,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const runBtn = document.getElementById('run-matching-btn');
     const matchesPreview = document.getElementById('matches-results');
     const matchesList = document.getElementById('matches-list');
+    const addRecipientBtn = document.getElementById('add-recipient-btn');
+    const addDonorBtn = document.getElementById('add-donor-btn');
+    const addRecordModal = document.getElementById('add-record-modal');
+    const addRecordClose = addRecordModal ? addRecordModal.querySelector('.form-modal__close') : null;
+    const addRecordBackdrop = addRecordModal ? addRecordModal.querySelector('.form-modal__backdrop') : null;
+    const addRecordForm = document.getElementById('add-record-form');
+    const addRecordTitle = document.getElementById('add-record-title');
+    const addRecordSubtitle = document.getElementById('add-record-subtitle');
+    const addRecordMessage = document.getElementById('add-record-message');
     const matchModal = document.getElementById('match-modal');
     const matchModalClose = matchModal ? matchModal.querySelector('.match-modal__close') : null;
     const matchModalBackdrop = matchModal ? matchModal.querySelector('.match-modal__backdrop') : null;
@@ -489,14 +541,78 @@ document.addEventListener('DOMContentLoaded', async () => {
         matchesPreview.classList.toggle('is-open', shouldOpen);
     };
 
+    const syncModalState = () => {
+        const matchOpen = matchModal && matchModal.classList.contains('is-open');
+        const recordOpen = addRecordModal && addRecordModal.classList.contains('is-open');
+        document.body.classList.toggle('modal-open', matchOpen || recordOpen);
+    };
+
     const setMatchModalOpen = (shouldOpen) => {
         if (!matchModal) return;
         matchModal.classList.toggle('is-open', shouldOpen);
         matchModal.setAttribute('aria-hidden', String(!shouldOpen));
-        document.body.classList.toggle('modal-open', shouldOpen);
+        if (shouldOpen && addRecordModal) {
+            addRecordModal.classList.remove('is-open');
+            addRecordModal.setAttribute('aria-hidden', 'true');
+        }
+        syncModalState();
         if (shouldOpen && matchModalClose) {
             matchModalClose.focus();
         }
+    };
+
+    const setAddRecordModalOpen = (shouldOpen) => {
+        if (!addRecordModal) return;
+        addRecordModal.classList.toggle('is-open', shouldOpen);
+        addRecordModal.setAttribute('aria-hidden', String(!shouldOpen));
+        if (shouldOpen && matchModal) {
+            matchModal.classList.remove('is-open');
+            matchModal.setAttribute('aria-hidden', 'true');
+        }
+        syncModalState();
+        if (shouldOpen && addRecordClose) {
+            addRecordClose.focus();
+        }
+    };
+
+    const setAddRecordRole = (role) => {
+        if (!addRecordModal) return;
+        addRecordModal.dataset.role = role;
+        const isRecipient = role === 'recipient';
+        addRecordModal.querySelectorAll('.form-only-recipient').forEach(el => {
+            el.classList.toggle('is-hidden', !isRecipient);
+        });
+        addRecordModal.querySelectorAll('.form-only-donor').forEach(el => {
+            el.classList.toggle('is-hidden', isRecipient);
+        });
+        const donorOrgan = addRecordModal.querySelector('[name="donor_organ"]');
+        const recipientNeed = addRecordModal.querySelector('[name="recipient_need"]');
+        if (donorOrgan) donorOrgan.required = !isRecipient;
+        if (recipientNeed) recipientNeed.required = isRecipient;
+        if (addRecordTitle) {
+            addRecordTitle.textContent = isRecipient ? 'Add Recipient' : 'Add Donor';
+        }
+        if (addRecordSubtitle) {
+            addRecordSubtitle.textContent = isRecipient
+                ? 'Create a new recipient profile in Supabase.'
+                : 'Create a new donor profile in Supabase.';
+        }
+    };
+
+    const setAddRecordMessage = (message, type) => {
+        if (!addRecordMessage) return;
+        addRecordMessage.textContent = message || '';
+        addRecordMessage.classList.remove('is-error', 'is-success');
+        if (type) {
+            addRecordMessage.classList.add(type === 'error' ? 'is-error' : 'is-success');
+        }
+    };
+
+    const setFormBusy = (isBusy) => {
+        if (!addRecordForm) return;
+        addRecordForm.querySelectorAll('input, select, button').forEach(el => {
+            el.disabled = isBusy;
+        });
     };
 
     const fillMatchModal = (match) => {
@@ -623,10 +739,75 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && matchModal && matchModal.classList.contains('is-open')) {
+        if (event.key !== 'Escape') return;
+        if (matchModal && matchModal.classList.contains('is-open')) {
             closeMatchModal();
         }
+        if (addRecordModal && addRecordModal.classList.contains('is-open')) {
+            setAddRecordModalOpen(false);
+        }
     });
+
+    if (addRecordBackdrop) {
+        addRecordBackdrop.addEventListener('click', () => setAddRecordModalOpen(false));
+    }
+
+    if (addRecordClose) {
+        addRecordClose.addEventListener('click', () => setAddRecordModalOpen(false));
+    }
+
+    if (addRecordForm) {
+        addRecordForm.querySelectorAll('[data-close="true"]').forEach(button => {
+            button.addEventListener('click', () => setAddRecordModalOpen(false));
+        });
+    }
+
+    if (addRecipientBtn) {
+        addRecipientBtn.addEventListener('click', () => {
+            setAddRecordRole('recipient');
+            setAddRecordMessage('');
+            addRecordForm?.reset();
+            setAddRecordModalOpen(true);
+        });
+    }
+
+    if (addDonorBtn) {
+        addDonorBtn.addEventListener('click', () => {
+            setAddRecordRole('donor');
+            setAddRecordMessage('');
+            addRecordForm?.reset();
+            setAddRecordModalOpen(true);
+        });
+    }
+
+    if (addRecordForm) {
+        addRecordForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            if (!addRecordModal) return;
+            const role = addRecordModal.dataset.role || 'recipient';
+            const formData = new FormData(addRecordForm);
+            setFormBusy(true);
+            setAddRecordMessage('Saving...', null);
+
+            try {
+                if (role === 'recipient') {
+                    await createRecipientRecord(formData);
+                } else {
+                    await createDonorRecord(formData);
+                }
+
+                await refreshData();
+                setAddRecordMessage('Saved successfully.', 'success');
+                addRecordForm.reset();
+                setAddRecordModalOpen(false);
+            } catch (error) {
+                console.error(error);
+                setAddRecordMessage(error?.message || 'Save failed. Check Supabase permissions.', 'error');
+            } finally {
+                setFormBusy(false);
+            }
+        });
+    }
 
     let recipients = [];
     let donors = [];
@@ -653,6 +834,125 @@ document.addEventListener('DOMContentLoaded', async () => {
     const updateLastSync = () => {
         const now = new Date();
         lastSyncEl.textContent = now.toLocaleString();
+    };
+
+    const refreshData = async () => {
+        sourceData = await loadSupabaseData();
+        recipients = buildRecipientCards(sourceData);
+        donors = buildDonorCards(sourceData);
+        matches = buildHlaMatches(sourceData);
+        updateSummary(sourceData);
+        updateLastSync();
+
+        renderRecipients(recipients, recipientsList, getInitials);
+        renderDonors(donors, donorsList, getInitials);
+        document.getElementById('recipients-count').textContent = recipients.length;
+        document.getElementById('donors-count').textContent = donors.length;
+    };
+
+    const buildHlaPayload = (formData) => {
+        const payload = {};
+        let hasAny = false;
+        HLA_FIELDS.forEach(field => {
+            const value = cleanValue(formData.get(field));
+            if (value) {
+                payload[field] = value;
+                hasAny = true;
+            }
+        });
+        return hasAny ? payload : null;
+    };
+
+    const getNextId = async (tableName, idField) => {
+        const latest = await fetchLatestId(tableName, idField);
+        return Number(latest || 0) + 1;
+    };
+
+    const createRecipientRecord = async (formData) => {
+        const name = cleanValue(formData.get('name'));
+        const bloodType = cleanValue(formData.get('blood_type'));
+        const phone = cleanValue(formData.get('phone'));
+        const waitStatus = cleanValue(formData.get('wait_status')) || 'Active';
+        const organNeed = cleanValue(formData.get('recipient_need')) || 'Any';
+        const organSize = cleanValue(formData.get('organ_size'));
+
+        if (!name || !bloodType) {
+            throw new Error('Name and blood type are required.');
+        }
+
+        const rId = await getNextId('recipient', 'r_id');
+        await insertRow('recipient', {
+            r_id: rId,
+            name,
+            phone_number: phone,
+            blood_type: bloodType
+        });
+
+        const roId = await getNextId('recipient_organ', 'ro_id');
+        await insertRow('recipient_organ', {
+            ro_id: roId,
+            r_id: rId,
+            name: organNeed,
+            size: organSize
+        });
+
+        const hlaPayload = buildHlaPayload(formData);
+        if (hlaPayload) {
+            await insertRow('recipient_hla_test', {
+                ro_id: roId,
+                ...hlaPayload
+            });
+        }
+
+        const wId = await getNextId('waiting_list', 'w_id');
+        await insertRow('waiting_list', {
+            w_id: wId,
+            r_id: rId,
+            date_added: getDateString(),
+            time_added: getTimeString(),
+            status: waitStatus
+        });
+    };
+
+    const createDonorRecord = async (formData) => {
+        const name = cleanValue(formData.get('name'));
+        const bloodType = cleanValue(formData.get('blood_type'));
+        const phone = cleanValue(formData.get('phone'));
+        const donorType = cleanValue(formData.get('donor_type')) || 'Alive';
+        const donationDate = cleanValue(formData.get('donation_date'));
+        const organName = cleanValue(formData.get('donor_organ')) || 'Left Kidney';
+        const organSize = cleanValue(formData.get('organ_size'));
+
+        if (!name || !bloodType) {
+            throw new Error('Name and blood type are required.');
+        }
+
+        const dId = await getNextId('donor', 'd_id');
+        await insertRow('donor', {
+            d_id: dId,
+            name,
+            phone_number: phone,
+            donation_date: donationDate,
+            type: donorType,
+            blood_type: bloodType
+        });
+
+        const odId = await getNextId('donor_organ', 'od_id');
+        await insertRow('donor_organ', {
+            od_id: odId,
+            d_id: dId,
+            name: organName,
+            size: organSize,
+            status: 'Available'
+        });
+
+        const hlaPayload = buildHlaPayload(formData);
+        if (hlaPayload) {
+            await insertRow('donor_hla_test', {
+                od_id: odId,
+                ...hlaPayload
+            });
+        }
     };
 
     try {
