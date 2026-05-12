@@ -1381,6 +1381,19 @@ h1, h2, h3, h4, h5, h6 {
     transition: var(--transition-fast);
 }
 
+.form-field input[type="date"] {
+    padding-right: 38px;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f8f8f8' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='4.5' width='18' height='16' rx='2'/><line x1='8' y1='3' x2='8' y2='7'/><line x1='16' y1='3' x2='16' y2='7'/><line x1='3' y1='10' x2='21' y2='10'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px 16px;
+}
+
+.form-field input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0;
+    cursor: pointer;
+}
+
 .form-field select option {
     color: #0a0a0a;
     background: #f8f8f8;
