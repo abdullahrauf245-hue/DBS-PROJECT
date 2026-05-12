@@ -295,11 +295,13 @@ function buildHlaMatches({
 
             matches.push({
                 recipient: {
+                    id: `R${recipient.r_id}`,
                     name: recipient.name,
                     bloodType: recipientBlood || 'N/A',
                     hla: formatHlaRow(recHla)
                 },
                 donor: {
+                    id: `D${donor.d_id}`,
                     name: donor.name,
                     bloodType: donorBlood || 'N/A',
                     hla: formatHlaRow(donHla)
@@ -319,6 +321,8 @@ function renderRecipients(list, container, initialsFn) {
         const delay = index * 0.1;
         const card = document.createElement('div');
         card.className = 'person-card recipient-card';
+        card.dataset.personId = p.id || '';
+        card.dataset.personName = p.name || '';
         card.style.animationDelay = `${delay}s`;
         const urgencyColors = {
             Active: '#ff2d2d',
@@ -350,6 +354,8 @@ function renderDonors(list, container, initialsFn) {
         const delay = index * 0.1;
         const card = document.createElement('div');
         card.className = 'person-card donor-card';
+        card.dataset.personId = d.id || '';
+        card.dataset.personName = d.name || '';
         card.style.animationDelay = `${delay}s`;
         card.innerHTML = `
             <div class="avatar">${initialsFn(d.name)}</div>
@@ -387,6 +393,8 @@ function renderMatches(matchResults, matchesList, initialsFn) {
         card.style.opacity = '0';
 
         const color = getScoreColor(match.score);
+        const recipientName = match.recipient?.name || match.recipient?.id || 'Recipient';
+        const donorName = match.donor?.name || match.donor?.id || 'Donor';
         const factors = Array.isArray(match.matchFactors) ? match.matchFactors : [];
         const recipientHla = match.recipient?.hla || 'N/A';
         const donorHla = match.donor?.hla || 'N/A';
@@ -404,11 +412,18 @@ function renderMatches(matchResults, matchesList, initialsFn) {
                 </div>
                 <button class="match-action" data-match-index="${index}">Review Case</button>
             </div>
+            <div class="match-pair">
+                <span class="pair-label">Recipient:</span>
+                <span class="pair-name">${recipientName}</span>
+                <span class="pair-sep">→</span>
+                <span class="pair-label">Donor:</span>
+                <span class="pair-name">${donorName}</span>
+            </div>
             <div class="match-details">
                     <div class="match-person recipient">
-                        <div class="avatar" style="background: rgba(255,45,45,0.15); border: 1px solid rgba(255,45,45,0.45); color: #ff9a9a;">${initialsFn(match.recipient.name)}</div>
+                        <div class="avatar" style="background: rgba(255,45,45,0.15); border: 1px solid rgba(255,45,45,0.45); color: #ff9a9a;">${initialsFn(recipientName)}</div>
                     <div>
-                        <h5>${match.recipient.name}</h5>
+                        <h5>${recipientName}</h5>
                         <span>Recipient • Blood: ${match.recipient.bloodType}</span>
                     </div>
                 </div>
@@ -418,9 +433,9 @@ function renderMatches(matchResults, matchesList, initialsFn) {
                 </div>
 
                     <div class="match-person donor">
-                        <div class="avatar" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.4); color: #ffffff;">${initialsFn(match.donor.name)}</div>
+                        <div class="avatar" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.4); color: #ffffff;">${initialsFn(donorName)}</div>
                     <div>
-                        <h5>${match.donor.name}</h5>
+                        <h5>${donorName}</h5>
                         <span>Donor • Blood: ${match.donor.bloodType}</span>
                     </div>
                 </div>
@@ -488,8 +503,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!matchModal) return;
         const color = getScoreColor(match.score);
         const factors = Array.isArray(match.matchFactors) ? match.matchFactors : [];
+        const recipientName = match.recipient?.name || match.recipient?.id || 'Recipient';
+        const donorName = match.donor?.name || match.donor?.id || 'Donor';
         if (matchModalSubtitle) {
-            matchModalSubtitle.textContent = `${match.recipient?.name || 'Recipient'} vs ${match.donor?.name || 'Donor'}`;
+            matchModalSubtitle.textContent = `${recipientName} vs ${donorName}`;
         }
         if (matchModalScore) {
             matchModalScore.textContent = `${match.score}%`;
@@ -497,10 +514,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             matchModalScore.style.borderColor = color;
             matchModalScore.style.boxShadow = `0 0 20px ${color}40`;
         }
-        if (matchModalRecipient) matchModalRecipient.textContent = match.recipient?.name || 'N/A';
+        if (matchModalRecipient) matchModalRecipient.textContent = recipientName;
         if (matchModalRecipientBlood) matchModalRecipientBlood.textContent = `Blood: ${match.recipient?.bloodType || 'N/A'}`;
         if (matchModalRecipientHla) matchModalRecipientHla.textContent = `HLA: ${match.recipient?.hla || 'N/A'}`;
-        if (matchModalDonor) matchModalDonor.textContent = match.donor?.name || 'N/A';
+        if (matchModalDonor) matchModalDonor.textContent = donorName;
         if (matchModalDonorBlood) matchModalDonorBlood.textContent = `Blood: ${match.donor?.bloodType || 'N/A'}`;
         if (matchModalDonorHla) matchModalDonorHla.textContent = `HLA: ${match.donor?.hla || 'N/A'}`;
         if (matchModalFactors) {
@@ -519,9 +536,35 @@ document.addEventListener('DOMContentLoaded', async () => {
         runBtn.disabled = false;
     };
 
+    const clearHighlights = () => {
+        recipientsList?.querySelectorAll('.person-card').forEach(card => {
+            card.classList.remove('is-highlighted');
+        });
+        donorsList?.querySelectorAll('.person-card').forEach(card => {
+            card.classList.remove('is-highlighted');
+        });
+    };
+
+    const highlightPerson = (container, personId) => {
+        if (!container || !personId) return;
+        const card = container.querySelector(`[data-person-id="${personId}"]`);
+        if (!card) return;
+        card.classList.add('is-highlighted');
+        card.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+    };
+
+    const highlightMatchPair = (match) => {
+        if (!match) return;
+        clearHighlights();
+        highlightPerson(recipientsList, match.recipient?.id);
+        highlightPerson(donorsList, match.donor?.id);
+    };
+
     const getInitials = (name) => {
-        if (name === 'Anonymous') return 'AN';
-        return name.split(' ').map(n => n[0]).join('');
+        const safeName = String(name || '').trim();
+        if (!safeName) return '--';
+        if (safeName === 'Anonymous') return 'AN';
+        return safeName.split(' ').map(n => n[0]).join('').slice(0, 3);
     };
 
     const setPanelCollapsed = (toggle, shouldCollapse) => {
@@ -566,6 +609,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const match = matches[matchIndex];
             if (!match) return;
             fillMatchModal(match);
+            highlightMatchPair(match);
             setMatchModalOpen(true);
         });
     }

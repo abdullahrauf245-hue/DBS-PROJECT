@@ -460,6 +460,10 @@ h1, h2, h3, h4, h5, h6 {
         gap: 14px;
     }
 
+    .match-pair {
+        gap: 6px;
+    }
+
     .match-person {
         width: 100%;
         justify-content: space-between;
@@ -650,6 +654,12 @@ h1, h2, h3, h4, h5, h6 {
     background: rgba(255, 45, 45, 0.06);
     border-color: rgba(255, 45, 45, 0.4);
     transform: translateX(4px);
+}
+
+.person-card.is-highlighted {
+    border-color: rgba(255, 45, 45, 0.7);
+    box-shadow: 0 0 22px rgba(255, 45, 45, 0.35);
+    background: rgba(255, 45, 45, 0.08);
 }
 
 .avatar {
@@ -928,6 +938,34 @@ h1, h2, h3, h4, h5, h6 {
     background: var(--accent-primary);
     color: var(--bg-dark);
     box-shadow: var(--glow-primary);
+}
+
+.match-pair {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.pair-label {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
+.pair-name {
+    color: var(--accent-secondary);
+    font-weight: 600;
+}
+
+.pair-sep {
+    color: var(--accent-primary);
+    font-weight: 700;
 }
 
 .match-details {
