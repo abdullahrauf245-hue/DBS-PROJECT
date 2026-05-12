@@ -688,6 +688,7 @@ h1, h2, h3, h4, h5, h6 {
     gap: 16px;
     transition: var(--transition-fast);
     cursor: pointer;
+    position: relative;
 }
 
 .person-card:hover {
@@ -765,24 +766,27 @@ h1, h2, h3, h4, h5, h6 {
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.date-row {
-    margin-top: 8px;
+.card-date-mark {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    font-size: 10px;
+    font-family: 'Space Mono', monospace;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.03);
+    padding: 3px 6px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 11px;
-    color: var(--text-muted);
-    font-family: 'Space Mono', monospace;
+    gap: 4px;
+    pointer-events: none;
 }
 
-.date-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 3px 8px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+.card-date-mark i {
+    font-size: 9px;
+    opacity: 0.7;
+    color: var(--accent-primary);
 }
 
 /* ==========================================

@@ -386,6 +386,7 @@ function renderRecipients(list, container, initialsFn) {
         };
         const urgencyColor = urgencyColors[p.urgency] || '#94a3b8';
         card.innerHTML = `
+            <div class="card-date-mark" title="Waitlist Date"><i class="fa-solid fa-clock"></i> ${formatDateForDisplay(p.waitDate)}</div>
             <div class="avatar">${initialsFn(p.name)}</div>
             <div class="info">
                 <h4>${p.name}</h4>
@@ -395,9 +396,6 @@ function renderRecipients(list, container, initialsFn) {
                     <span class="trait-badge" style="color: ${urgencyColor}">
                         <i class="fa-solid fa-circle-exclamation"></i> ${p.urgency}
                     </span>
-                </div>
-                <div class="date-row">
-                    <span class="date-chip"><i class="fa-solid fa-calendar-days"></i> Waitlist: ${formatDateForDisplay(p.waitDate)}</span>
                 </div>
             </div>
         `;
@@ -415,6 +413,7 @@ function renderDonors(list, container, initialsFn) {
         card.dataset.personName = d.name || '';
         card.style.animationDelay = `${delay}s`;
         card.innerHTML = `
+            <div class="card-date-mark" title="Donation Date"><i class="fa-solid fa-calendar-plus"></i> ${formatDateForDisplay(d.donationDate)}</div>
             <div class="avatar">${initialsFn(d.name)}</div>
             <div class="info">
                 <h4>${d.name}</h4>
@@ -422,9 +421,6 @@ function renderDonors(list, container, initialsFn) {
                     <span class="trait-badge trait-blood"><i class="fa-solid fa-droplet"></i> ${d.bloodType}</span>
                     <span class="trait-badge trait-hla">HLA: ${d.hla}</span>
                     <span class="trait-badge"><i class="fa-solid fa-user-tag"></i> ${d.type}</span>
-                </div>
-                <div class="date-row">
-                    <span class="date-chip"><i class="fa-solid fa-calendar-days"></i> Donation: ${formatDateForDisplay(d.donationDate)}</span>
                 </div>
             </div>
         `;
