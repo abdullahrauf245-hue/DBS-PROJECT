@@ -1381,6 +1381,11 @@ h1, h2, h3, h4, h5, h6 {
     transition: var(--transition-fast);
 }
 
+.form-field select option {
+    color: #0a0a0a;
+    background: #f8f8f8;
+}
+
 .form-field input:focus,
 .form-field select:focus {
     border-color: var(--accent-primary);
