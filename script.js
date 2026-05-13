@@ -548,7 +548,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const lastSyncEl = document.getElementById('last-sync-time');
     const panelToggles = document.querySelectorAll('.panel-toggle');
     const panelMedia = window.matchMedia('(max-width: 980px)');
-    const compactMedia = window.matchMedia('(max-width: 720px)');
 
     const setMatchesOpen = (shouldOpen) => {
         matchesPreview.classList.toggle('is-open', shouldOpen);
@@ -713,21 +712,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     const syncPanelLayout = () => {
-        if (!panelMedia.matches) {
-            panelToggles.forEach(toggle => setPanelCollapsed(toggle, false));
-            return;
-        }
-
-        if (compactMedia.matches) {
-            panelToggles.forEach((toggle, index) => {
-                setPanelCollapsed(toggle, index > 0);
-            });
-        }
+        // On small screens the layout stacks vertically. Keep both panels expanded by default
+        // so the donors list doesn’t appear to “disappear”. Users can still collapse manually.
+        panelToggles.forEach(toggle => setPanelCollapsed(toggle, false));
     };
 
     syncPanelLayout();
     panelMedia.addEventListener('change', syncPanelLayout);
-    compactMedia.addEventListener('change', syncPanelLayout);
 
     if (matchesList) {
         matchesList.addEventListener('click', (event) => {
